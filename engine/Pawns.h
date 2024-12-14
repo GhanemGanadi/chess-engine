@@ -28,6 +28,7 @@ namespace Engine {
         static int Evaluate_Pawn_Structure(const Board& board, PieceColour colour);
         static U64 Get_Shield_Squares(const Board& board, int kingSquare, PieceColour colour);
         static int Evaluate_Pawn_Shield(const Board& board, PieceColour colour);
+        static bool Is_Passed_Pawn(const Board& board, int square, PieceColour colour);
 
     };
 

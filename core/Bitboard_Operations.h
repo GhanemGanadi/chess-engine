@@ -57,6 +57,17 @@ inline int Get_LS1B_Index(const U64 bitboard) {
     return bitboard ? Count_Bits((bitboard & -bitboard) - 1 ) : -1;
 }
 
+inline U64 Get_MS1B(U64 bitboard) {
+    bitboard |= bitboard >> 32;
+    bitboard |= bitboard >> 16;
+    bitboard |= bitboard >> 8;
+    bitboard |= bitboard >> 4;
+    bitboard |= bitboard >> 2;
+    bitboard |= bitboard >> 1;
+
+    return bitboard ^= bitboard >> 1;
+}
+
 
 inline U64 Set_Occupancy(const int index, const int bitsInMask, U64 attackMask){
     U64 occupancy = 0ULL;

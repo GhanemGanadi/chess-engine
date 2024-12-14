@@ -88,6 +88,30 @@ namespace Engine {
     	return score;
     }
 
+	bool Pawn_Evaluation::Is_Passed_Pawn(const Board &board, const int square, const PieceColour colour) {
+	    if (!(1ULL << square & board.Get_Piece_Bitboard(PAWN, colour))) { return false; }
+
+    	U64 enemyPawns = board.Get_Piece_Bitboard(PAWN, colour == WHITE ? BLACK : WHITE);
+    	const int pawnFile = square % 8;
+
+    	U64 frontSpan = 1ULL << square;
+    	if (colour == WHITE) {
+    		frontSpan = (frontSpan >> pawnFile) - 1;
+    	}
+    	else {
+    		frontSpan = ~((frontSpan << (8 - pawnFile)) - 1);
+    	}
+    	enemyPawns &= frontSpan;
+
+    	U64 adjacentFiles = FILES[pawnFile];
+
+    	if (pawnFile > 0){ adjacentFiles |= FILES[pawnFile - 1]; }
+    	if (pawnFile < 7){ adjacentFiles |= FILES[pawnFile + 1]; }
+
+    	return (enemyPawns & frontSpan & adjacentFiles) == 0ULL;
+	}
+
+
 
 
 
