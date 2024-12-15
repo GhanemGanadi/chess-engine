@@ -156,12 +156,12 @@ inline std::string Square_To_String(int square) {
     const std::string files = "abcdefgh";
     const std::string ranks = "87654321";
 
-    int file = square % 8;          // 0-7 for a-h
-    int rank = square / 8;          // 0-7 for 8-1
+    int file = square % 8;
+    int rank = square / 8;
 
     std::string result;
-    result += files[file];          // Add file letter
-    result += ranks[rank];          // Add rank number
+    result += files[file];
+    result += ranks[rank];
 
     return result;
 }
@@ -189,7 +189,7 @@ inline U64 Get_Path_Between(const int from, const int to) {
         int current = from;
         while (current != to) {
             current += (rankStep * 8) + fileStep;
-            if (current != to) // Don't include the destination square
+            if (current != to)
                 path |= 1ULL << current;
         }
     }

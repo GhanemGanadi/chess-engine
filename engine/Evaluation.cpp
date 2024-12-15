@@ -1,7 +1,7 @@
 #include "Evaluation.h"
 
 #include <iomanip>
-
+#include "Pawns.h"
 #include "Phases.h"
 
 namespace Engine {
@@ -84,30 +84,6 @@ namespace Engine {
         }
         return score;
     }
-
-    int Evaluator::Evaluate_Position(Board& board, const PieceColour colour, const Game_Phase phase) {
-        int score = 0;
-
-        // Evaluate from perspective of both sides
-        const int sideToMove = (
-            Evaluate_Piece_Mobility(board, colour) +
-            // Evaluate_Pawn_Structure(board, colour) +
-            Evaluate_Material(board, colour, phase)
-        );
-
-        const int opposingSide = (
-            Evaluate_Piece_Mobility(board, colour == WHITE ? BLACK : WHITE) +
-            // Evaluate_Pawn_Structure(board, colour == WHITE ? BLACK : WHITE) +
-            Evaluate_Material(board, colour == WHITE ? BLACK : WHITE, phase)
-        );
-
-        // Final score is the difference between the two sides
-        score = sideToMove - opposingSide;
-
-        // Return score from perspective of side to move
-        return score;
-    }
-
     // Debug versions of component evaluation functions
     int Evaluator::Debug_Evaluate_Material(const Board& board, const PieceColour colour, const Game_Phase phase) {
         int score = 0;
@@ -234,6 +210,7 @@ namespace Engine {
 
 
     int Evaluator::Square_Control_Value(const int square, const Game_Phase phase, Board& board) {
+        //
         int score = 0;
         const U64 target_square = 1ULL << square;
 
@@ -244,7 +221,6 @@ namespace Engine {
             const int piece_square = Get_LS1B_Index(whitePieces);
             const PieceType piece = Board_Analyser::Find_Piece_Type(piece_square, WHITE, board);
 
-            // Get legal moves for this piece (which accounts for pins)
             const U64 control = moveGen.Get_Legal_Moves(piece_square, WHITE, piece, board);
 
             // If this piece controls our target square
@@ -307,13 +283,35 @@ namespace Engine {
     }
 
     int Evaluator::Evaluate_King_Safety(const Board &board, const PieceColour colour) {
-        int score = 0;
+        int score = Pawn_Evaluation::Evaluate_Pawn_Shield(board, WHITE) + Pawn_Evaluation::Evaluate_Open_File(board, WHITE);
         U64 kingBB = board.Get_Piece_Bitboard(KING, colour);
-        U64 pawnProtection = board.Get_Piece_Bitboard(PAWN, colour);
+
 
 
         return score;
     }
+
+    bool Evaluator::Is_Piece_Hanging(const Board &board, int square, PieceColour colour) {
+        if (Board_Analyser::Is_Square_Attacked(square, colour, board)) {
+            return true;
+        }
+        return false;
+    }
+
+
+    int Evaluator::Evaluate_Complete_Position(Board &board, const Game_Phase phase, PieceColour colour) {
+        int score = 0;
+
+        score += Evaluate_Material(board, colour, phase);
+
+        score += Evaluate_Piece_Mobility(board, colour);
+        score += Evaluate_King_Safety(board, colour);
+        score += Pawn_Evaluation::Evaluate_Pawn_Structure(board, colour);
+
+
+        return score;
+    }
+
 
 
 

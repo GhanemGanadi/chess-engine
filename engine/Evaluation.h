@@ -146,7 +146,9 @@ namespace Engine {
         static int Evaluate_Knight_Position(const Board& board, PieceColour colour);
         static bool Is_Knight_Trapped(const Board& board, int square, PieceColour colour);
 
-        static int Evaluate_Position(Board& board, PieceColour colour, Game_Phase phase);
+        static bool Is_Piece_Hanging(const Board& board, int square, PieceColour colour);
+
+        static int Evaluate_Complete_Position(Board &board, Game_Phase phase, PieceColour colour);
         static int Get_Piece_Value(PieceType piece, Game_Phase phase);
         static int Square_Control_Value(int square, Game_Phase phase, Board& board);
 

@@ -111,6 +111,46 @@ namespace Engine {
     	return (enemyPawns & frontSpan & adjacentFiles) == 0ULL;
 	}
 
+	int Pawn_Evaluation::Evaluate_Open_File(const Board &board, const PieceColour colour) {
+		int score = 0;
+		const U64 friendlyPawns = board.Get_Piece_Bitboard(PAWN, colour);
+    	const U64 enemyPawns = board.Get_Piece_Bitboard(PAWN, colour == WHITE ? BLACK : WHITE);
+
+		for (const U64 singleFile : FILES) {
+			const U64 friendlyFilePawns = singleFile & friendlyPawns;
+			const U64 enemyFilePawns = singleFile & enemyPawns;
+
+			// Half open file
+			if (!friendlyFilePawns && enemyFilePawns) {
+				score -= HALF_OPEN_FILE_PENALTY;
+			}
+
+			// Open file
+			else if (!friendlyFilePawns && !enemyFilePawns) {
+				score -= OPEN_FILE_PENALTY;
+			}
+		}
+    	return score;
+	}
+
+	int Pawn_Evaluation::Evaluate_Passed_Pawn(const Board &board, const PieceColour colour) {
+		int score = 0;
+		U64 pawns = board.Get_Piece_Bitboard(PAWN, colour);
+
+    	while (pawns) {
+    		const int singlePawn = Get_LS1B_Index(pawns);
+    		pawns &= pawns - 1;
+
+    		if (Is_Passed_Pawn(board, singlePawn, colour)) {
+				std::cout << "Passed pawn at rank : " << singlePawn / 8 << std::endl;
+    			score += PASSED_PAWN_BONUS[singlePawn / 8];
+    		}
+    	}
+
+    	return score;
+
+	}
+
 
 
 
