@@ -9,7 +9,7 @@ namespace Board_Analyser {
 
     PieceType Find_Piece_Type(int square, PieceColour colour, const Board& board);
 
-    bool Is_Square_Attacked(int square, PieceColour attackerColour, const Board& board);
+    int Is_Square_Attacked(int square, PieceColour attackerColour, const Board& board);
 
     bool Handle_Castling(const Board& board, const Move& move);
     bool Can_Castle(const Move &move, const Board &board);

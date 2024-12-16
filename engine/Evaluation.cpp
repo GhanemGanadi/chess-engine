@@ -291,11 +291,8 @@ namespace Engine {
         return score;
     }
 
-    bool Evaluator::Is_Piece_Hanging(const Board &board, int square, PieceColour colour) {
-        if (Board_Analyser::Is_Square_Attacked(square, colour, board)) {
-            return true;
-        }
-        return false;
+    bool Evaluator::Is_Piece_Hanging(const Board &board, const int square, const PieceColour colour) {
+        return Board_Analyser::Is_Square_Attacked(square, colour, board) == -1;
     }
 
 
