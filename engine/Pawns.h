@@ -31,6 +31,8 @@ namespace Engine {
         static int Evaluate_Pawn_Shield(const Board& board, PieceColour colour);
         static int Evaluate_Open_File(const Board& board, PieceColour colour);
 
+        static int Complete_Pawn_Evaluation(const Board& board, PieceColour colour);
+
         static int Evaluate_Passed_Pawn(const Board& board, PieceColour colour);
         static bool Is_Passed_Pawn(const Board& board, int square, PieceColour colour);
 

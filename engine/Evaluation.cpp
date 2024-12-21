@@ -303,7 +303,7 @@ namespace Engine {
 
         score += Evaluate_Piece_Mobility(board, colour);
         score += Evaluate_King_Safety(board, colour);
-        score += Pawn_Evaluation::Evaluate_Pawn_Structure(board, colour);
+        score += Pawn_Evaluation::Complete_Pawn_Evaluation(board, colour);
 
 
         return score;

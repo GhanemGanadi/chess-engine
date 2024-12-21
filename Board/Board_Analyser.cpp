@@ -255,7 +255,7 @@ namespace Board_Analyser {
         }
 
         // Check king attacks on square
-        U64 kingAttacks = Moves_Generation.Get_King_Moves(square);
+        U64 kingAttacks = MoveGeneration::Get_King_Moves(square);
         if (kingAttacks & board.Get_Piece_Bitboard(KING, attackerColour)){
             return Get_Square(kingAttacks & board.Get_Piece_Bitboard(KING, attackerColour));
         }

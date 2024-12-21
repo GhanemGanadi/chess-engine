@@ -138,8 +138,6 @@ namespace Engine {
 
     public:
         static int Evaluate_Material(const Board& board, PieceColour colour, Game_Phase phase);
-        static int Evaluate_Pawn_Structure(const Board& board, PieceColour colour);
-        static int Evaluate_Pawn_Shield(const Board& board, PieceColour colour);
         static int Evaluate_Piece_Mobility(Board& board, PieceColour colour);
 
         static int Evaluate_King_Safety(const Board& board, PieceColour colour);

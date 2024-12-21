@@ -46,7 +46,7 @@ namespace Engine {
         return bestMove;
     }
 
-    int Search::Minimax(Board &board, const int depth, int alpha, int beta, const PieceColour colour) {
+    int Search::Minimax(Board &board, const int depth, int alpha, const int beta, const PieceColour colour) {
         if (depth == 0) {
             const Game_Phase phase = Phase::Phase_Detection(board);
             int score = Evaluator::Evaluate_Complete_Position(board, phase, WHITE) -
@@ -72,11 +72,11 @@ namespace Engine {
             board.Undo_Move(false);
 
             bestScore = std::max(bestScore, score);
-            alpha = std::max(alpha, score);
-
-            if (alpha >= beta) {
-                break;  // Beta cutoff
-            }
+            // alpha = std::max(alpha, score);
+            //
+            // if (alpha >= beta) {
+            //     break;  // Beta cutoff
+            // }
         }
         return bestScore;
     }

@@ -9,7 +9,8 @@ namespace Engine {
 		const Move& previousMove = board.moveHistory.back();
 
     	if (!previousMove.Is_Castling())
-		if (colour == WHITE) { pawns = board.Get_White_Pawn(); } else { pawns = board.Get_Black_Pawn(); }
+		if (colour == WHITE) { pawns = board.Get_White_Pawn(); }
+        else { pawns = board.Get_Black_Pawn(); }
 
 	    if (kingSquare == g1 || kingSquare == g8) {
 			pawns &= (FILE_H | FILE_G | FILE_F);
@@ -142,7 +143,6 @@ namespace Engine {
     		pawns &= pawns - 1;
 
     		if (Is_Passed_Pawn(board, singlePawn, colour)) {
-				std::cout << "Passed pawn at rank : " << singlePawn / 8 << std::endl;
     			score += PASSED_PAWN_BONUS[singlePawn / 8];
     		}
     	}
@@ -150,6 +150,18 @@ namespace Engine {
     	return score;
 
 	}
+
+	int Pawn_Evaluation::Complete_Pawn_Evaluation(const Board &board, const PieceColour colour) {
+		int score = 0;
+
+		score += Evaluate_Passed_Pawn(board, colour);
+    	score += Evaluate_Open_File(board, colour);
+    	score += Evaluate_Pawn_Shield(board, colour);
+    	score += Evaluate_Pawn_Structure(board, colour);
+
+    	return score;
+	}
+
 
 
 

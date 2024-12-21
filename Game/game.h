@@ -32,17 +32,22 @@ public:
         Game_State boardState = board.Get_Game_State();
 
         while(boardState == Game_State::ACTIVE || boardState == Game_State::CHECK) {
-
-            Move bestMove = Engine::Search::Find_Best_Move(board, 4, board.currentTurn);
-            board.Print_Move_Details(bestMove);
+            Board tempBoard = board;
+            if (currentTurn == WHITE) {
+            Move bestMove = Engine::Search::Find_Best_Move(tempBoard, 4 , WHITE);
+                input = Square_To_String(bestMove.Get_From()) + Square_To_String(bestMove.Get_To());
+                board.Print_Move_Details(bestMove);
+            }
 
             turnString = currentTurn == WHITE ? "White To Move\n" : "Black To Move\n";
-            std::vector allMoves = Move_Generation.Generate_All_Moves(currentTurn, board);
-            MoveGeneration::Display_All_Moves(allMoves);
+            // std::vector allMoves = Move_Generation.Generate_All_Moves(currentTurn, board);
+            // MoveGeneration::Display_All_Moves(allMoves);
 
-            std::cout << turnString;
-            std::cout << "Input your move (or 'undo' to take back last move): ";
-            std::cin >> input;
+            if (currentTurn == BLACK) {
+                std::cout << turnString;
+                std::cout << "Input your move (or 'undo' to take back last move): ";
+                std::cin >> input;
+            }
 
             if(input == "undo") {
                 if(board.moveHistory.empty()) {

@@ -32,5 +32,12 @@ add_executable(bitboard main.cpp
 
         engine/Pawns.cpp
         engine/Pawns.h
+        engine/King.h
+        engine/King.cpp
+        Moves/Move_Generation.cpp
+        core/Book.cpp
+        core/Book.h
+        core/PGN_Parser.cpp
+        core/PGN_Parser.h
 
 )
