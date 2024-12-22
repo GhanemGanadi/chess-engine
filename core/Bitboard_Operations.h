@@ -8,6 +8,20 @@
 #define AB_FILE 217020518514230019ULL
 #define GH_FILE 13889313184910721216ULL
 
+static constexpr U64 FILE_A = 0x0101010101010101ULL;
+static constexpr U64 FILE_B = FILE_A << 1;
+static constexpr U64 FILE_C = FILE_A << 2;
+static constexpr U64 FILE_D = FILE_A << 3;
+static constexpr U64 FILE_E = FILE_A << 4;
+static constexpr U64 FILE_F = FILE_A << 5;
+static constexpr U64 FILE_G = FILE_A << 6;
+static constexpr U64 FILE_H = FILE_A << 7;
+
+static constexpr std::array FILES = {
+    FILE_A, FILE_B, FILE_C, FILE_D,
+    FILE_E, FILE_F, FILE_G, FILE_H
+};
+
 enum PieceType {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, NO_PIECE};
 enum PieceColour {WHITE, BLACK, NO_COLOUR};
 
@@ -165,6 +179,22 @@ inline std::string Square_To_String(int square) {
 
     return result;
 }
+
+inline Squares String_To_Square(const std::string& str) {
+    if (str.length() != 2) return a8;
+
+    const std::string files = "abcdefgh";
+    const std::string ranks = "87654321";
+
+    int file = files.find(std::tolower(str[0]));
+    if (file == std::string::npos) return a8;
+
+    int rank = ranks.find(str[1]);
+    if (rank == std::string::npos) return a8;
+
+    return static_cast<Squares>(rank * 8 + file);
+}
+
 inline std::string Get_Piece_Name(PieceType piece) {
     switch(piece) {
         case PAWN: return "Pawn";

@@ -11,19 +11,6 @@ struct PieceValues {
     static constexpr std::array<int, 6> MIDDLE_GAME_VALUES = {100, 320, 330, 500, 900, 0};
     static constexpr std::array<int, 6> END_GAME_VALUES = {120, 305, 345, 525, 880, 0};
 };
-static constexpr U64 FILE_A = 0x0101010101010101ULL;
-static constexpr U64 FILE_B = FILE_A << 1;
-static constexpr U64 FILE_C = FILE_A << 2;
-static constexpr U64 FILE_D = FILE_A << 3;
-static constexpr U64 FILE_E = FILE_A << 4;
-static constexpr U64 FILE_F = FILE_A << 5;
-static constexpr U64 FILE_G = FILE_A << 6;
-static constexpr U64 FILE_H = FILE_A << 7;
-
-static constexpr std::array FILES = {
-    FILE_A, FILE_B, FILE_C, FILE_D,
-    FILE_E, FILE_F, FILE_G, FILE_H
-};
 
 static constexpr int FLIP_SQUARE(const int square) {
     return square ^ 56;  // Equivalent to square XOR 0x38

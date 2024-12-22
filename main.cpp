@@ -1,5 +1,6 @@
 #include "Board/Board.h"
 #include "Game/game.h"
+#include "core/PGN_Parser.h"
 #include "engine/Evaluation.h"
 #include "engine/King.h"
 #include "engine/Pawns.h"
@@ -19,10 +20,6 @@ int main() {
 
     // game.Play_Game();
 
-
-    U64 attackzone = board.Get_Piece_Bitboard(KING, WHITE);
-    U64 kingZone = Engine::King_Evaluation::Get_King_Attack_Zone(board, WHITE);
-    attackzone |= attackzone << 16;
-    Board::Print_Bitboard(kingZone);
+    PGN_Parser::Parse_PGN_File("/Users/ghanem/CLionProjects/chess-engine/core/magnus_pgn.txt");
 
 }

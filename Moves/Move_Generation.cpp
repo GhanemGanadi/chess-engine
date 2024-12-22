@@ -2,6 +2,11 @@
 #include "Move_Generation.h"
 
 std::array<U64, 64> MoveGeneration::kingMoves;
+std::array<std::array<U64, 64>, 2> MoveGeneration::pawnMoves;
+std::array<std::array<U64, 64>, 2> MoveGeneration::pawnAttacks;
+std::array<U64, 64> MoveGeneration::knightMoves;
+Board MoveGeneration::board;
+
 
 U64 MoveGeneration::Generate_Knight_Moves(const int square) {
     U64 knight = 1ULL << square;
@@ -220,9 +225,9 @@ Move MoveGeneration::Detect_Capture(Move& move, const Board& board) {
 
     return moves;
 }
-[[nodiscard]] U64 MoveGeneration::Get_Knight_Moves(const int square) const {return knightMoves[square];}
-[[nodiscard]] U64 MoveGeneration::Get_Pawn_Moves(const int square, const PieceColour colour) const {return pawnMoves[colour == WHITE ? 0 : 1][square];}
-[[nodiscard]] U64 MoveGeneration::Get_Pawn_Attacks(const int square, const PieceColour colour) const {return pawnAttacks[colour == WHITE ? 0 : 1][square];
+[[nodiscard]] U64 MoveGeneration::Get_Knight_Moves(const int square) {return knightMoves[square];}
+[[nodiscard]] U64 MoveGeneration::Get_Pawn_Moves(const int square, const PieceColour colour){return pawnMoves[colour == WHITE ? 0 : 1][square];}
+[[nodiscard]] U64 MoveGeneration::Get_Pawn_Attacks(const int square, const PieceColour colour) {return pawnAttacks[colour == WHITE ? 0 : 1][square];
 }
 
 std::vector<Move> MoveGeneration::Generate_All_Moves(const PieceColour colour, Board& board) const {
@@ -302,7 +307,7 @@ void MoveGeneration::Display_All_Moves(const std::vector<Move>& moves) {
     std::cout << std::endl;
 }
 
-U64 MoveGeneration::Get_Piece_Attacks(const PieceType piece, const int square, const PieceColour colour) const {
+U64 MoveGeneration::Get_Piece_Attacks(const PieceType piece, const int square, const PieceColour colour) {
     const U64 occupancy = board.Get_All_Pieces();
     switch(piece) {
         case PAWN:

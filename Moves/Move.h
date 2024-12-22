@@ -25,7 +25,7 @@ public:
         , pieceColour(colour)
         , promotionPiece(NO_PIECE)
         , capturedPiece(NO_PIECE)
-        ,   pieceCaptureSquare(-1)
+        , pieceCaptureSquare(-1)
         , isCapture(false)
         , isCastling(false)
         , isEnPassant(false)
