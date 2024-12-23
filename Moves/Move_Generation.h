@@ -42,5 +42,5 @@ public:
     std::vector<Move> Generate_All_Moves(PieceColour colour, Board& board) const;
     static void Display_All_Moves(const std::vector<Move>& moves);
 
-    static U64 Get_Piece_Attacks(PieceType piece, int square, PieceColour colour);
+    static U64 Get_Piece_Attacks(PieceType piece, int square, PieceColour colour, const Board& board);
 };

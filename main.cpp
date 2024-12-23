@@ -20,6 +20,10 @@ int main() {
 
     // game.Play_Game();
 
-    PGN_Parser::Parse_PGN_File("/Users/ghanem/CLionProjects/chess-engine/core/magnus_pgn.txt");
+    std::vector<PGN_Game> games = PGN_Parser::Parse_PGN_File("/Users/ghanem/CLionProjects/chess-engine/core/magnus_pgn.txt");
+
+    std::cout << games.size() << std::endl;
+
+
 
 }

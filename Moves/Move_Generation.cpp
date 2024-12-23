@@ -307,12 +307,28 @@ void MoveGeneration::Display_All_Moves(const std::vector<Move>& moves) {
     std::cout << std::endl;
 }
 
-U64 MoveGeneration::Get_Piece_Attacks(const PieceType piece, const int square, const PieceColour colour) {
+U64 MoveGeneration::Get_Piece_Attacks(const PieceType piece, const int square, const PieceColour colour, const Board& board) {
     const U64 occupancy = board.Get_All_Pieces();
+    const U64 friendlyPieces = colour == WHITE ? board.Get_White_Pieces() : board.Get_Black_Pieces();
+    const U64 enemyPieces = colour == WHITE ? board.Get_Black_Pieces() : board.Get_White_Pieces();
     switch(piece) {
-        case PAWN:
-            return Get_Pawn_Attacks(square, colour);
-        case KNIGHT:
+        case PAWN: {
+            U64 pawnMoves = Get_Pawn_Moves(square, colour);
+            const U64 singlePush = (1ULL << (square + (colour == WHITE ? -8 : 8)));
+            const U64 doublePush = (1ULL << (square + (colour == WHITE ? -16 : 16)));
+            if (singlePush & occupancy) {
+                pawnMoves &= ~singlePush;
+                pawnMoves &= ~doublePush;
+            }
+
+            else if (doublePush & occupancy) {
+                pawnMoves &= ~doublePush;
+            }
+
+            return (pawnMoves & ~occupancy) |
+                (Get_Pawn_Attacks(square, colour) & enemyPieces) |
+                Generate_Pawn_En_Passant(square, colour, board);
+        }case KNIGHT:
             return Get_Knight_Moves(square);
         case BISHOP:
             return Tables::Get_Bishop_Moves(square, occupancy);
@@ -321,7 +337,7 @@ U64 MoveGeneration::Get_Piece_Attacks(const PieceType piece, const int square, c
         case QUEEN:
             return Tables::Get_Queen_Moves(square, occupancy);
         case KING:
-            return Get_King_Moves(square) & ~ occupancy;
+            return Get_King_Moves(square) & ~friendlyPieces;
         default:
             return 0ULL;
     }

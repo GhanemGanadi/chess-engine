@@ -22,6 +22,20 @@ static constexpr std::array FILES = {
     FILE_E, FILE_F, FILE_G, FILE_H
 };
 
+constexpr U64 RANK_1 = 18374686479671623680ULL;
+constexpr U64 RANK_2 = 71776119061217280ULL;
+constexpr U64 RANK_3 = 280375465082880ULL;
+constexpr U64 RANK_4 = 1095216660480ULL;
+constexpr U64 RANK_5 = 4278190080ULL;
+constexpr U64 RANK_6 = 16711680ULL;
+constexpr U64 RANK_7 = 65280ULL;
+constexpr U64 RANK_8 = 255ULL;
+
+constexpr std::array RANKS = {
+    RANK_1, RANK_2, RANK_3, RANK_4,
+    RANK_5, RANK_6, RANK_7, RANK_8
+};
+
 enum PieceType {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, NO_PIECE};
 enum PieceColour {WHITE, BLACK, NO_COLOUR};
 
@@ -82,6 +96,24 @@ inline U64 Get_MS1B(U64 bitboard) {
     return bitboard ^= bitboard >> 1;
 }
 
+inline void Print_Bitboard(const U64 bitboard) {
+    int count = 8;
+    for(int file = 0; file < 8; file++) {
+        std::cout << count << "  ";
+
+        for(int rank = 0; rank < 8; rank++) {
+            int position = file * 8 + rank;
+
+            if(Get_Bit(bitboard, position)) {std::cout << 1 << " ";}
+            else {std::cout  << ". ";}
+
+        }
+        std::cout << std::endl;
+        count -= 1;
+    }
+    std:: cout << "   a b c d e f g h" << std::endl;
+    std::cout << std::endl;
+}
 
 inline U64 Set_Occupancy(const int index, const int bitsInMask, U64 attackMask){
     U64 occupancy = 0ULL;

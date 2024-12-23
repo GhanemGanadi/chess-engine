@@ -15,7 +15,7 @@ namespace Board_Analyser {
     bool Can_Castle(const Move &move, const Board &board);
 
     bool Can_Promote(const Move& move);
-    void Promote_Pawn(const Move& move, PieceType promotionPiece, Board& board);
+    void Promote_Pawn(Move& move, PieceType promotionPiece, Board& board);
 
     bool Can_En_Passant(const Move& move, const Board& board);
     bool Handle_En_Passant(Move& move, Board& board);

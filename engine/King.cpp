@@ -28,7 +28,7 @@ namespace Engine{
             while (pieceBB) {
                 const int singlePiece = Get_LS1B_Index(pieceBB);
                 pieceBB &= pieceBB - 1;
-                U64 pieceInKingZone = kingZone & moveGen.Get_Piece_Attacks(piece, singlePiece, enemyColour);
+                U64 pieceInKingZone = kingZone & moveGen.Get_Piece_Attacks(piece, singlePiece, enemyColour, board);
                 if (pieceInKingZone) {
                     score += (Count_Bits(pieceInKingZone) * ATTACK_WEIGHTS[piece]);
                     numberOfAttackers++;

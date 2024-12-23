@@ -276,7 +276,6 @@ public:
         size_t pos = fen.find(' ');
         pos = fen.find(' ', pos + 1);  // Skip to castling section
         std::string castling = fen.substr(pos + 1, fen.find(' ', pos + 1) - pos - 1);
-        std::cout << castling << std::endl;
 
         // Reset castling rights
         castlingRights.whiteKingSideRookMoves = 9999;
@@ -482,26 +481,7 @@ public:
 
     }
 
-    static void Print_Bitboard(const U64 bitboard) {
-        int count = 8;
-        for(int file = 0; file < 8; file++) {
-            std::cout << count << "  ";
-
-            for(int rank = 0; rank < 8; rank++) {
-                int position = file * 8 + rank;
-
-                if(Get_Bit(bitboard, position)) {std::cout << 1 << " ";}
-                else {std::cout  << ". ";}
-
-            }
-            std::cout << std::endl;
-            count -= 1;
-        }
-        std:: cout << "   a b c d e f g h" << std::endl;
-        std::cout << std::endl;
-    }
-
-    void Print_Detailed_Board() const {
+    void Print_Detailed_Board()  const {
         int count = 8;
         for(int file = 0; file < 8; file++) {
             std::cout << count << "  ";
@@ -535,5 +515,6 @@ public:
         std::cout << "   a b c d e f g h" << std::endl;
         std::cout << std::endl;
     }
-};
 
+
+};
