@@ -1,11 +1,8 @@
 #include "Board/Board.h"
 #include "Game/game.h"
+#include "config.h"
 #include "core/PGN_Parser.h"
 #include "engine/Evaluation.h"
-#include "engine/King.h"
-#include "engine/Pawns.h"
-#include "engine/Phases.h"
-#include "engine/Search.h"
 
 
 int main() {
@@ -20,7 +17,7 @@ int main() {
 
     // game.Play_Game();
 
-    std::vector<PGN_Game> games = PGN_Parser::Parse_PGN_File("/Users/ghanem/CLionProjects/chess-engine/core/magnus_pgn.txt");
+    const std::vector<PGN_Game> games = PGN_Parser::Parse_PGN_File(PGN_FILE_PATH);
 
     std::cout << games.size() << std::endl;
 

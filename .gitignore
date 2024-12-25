@@ -11,9 +11,9 @@ CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 
-# Debug files
-engine/debug.txt
-engine/backup.txt
+# Files to avoid pushing
+core/Game_List.txt
+config.h
 
 # Compiled files
 *.o

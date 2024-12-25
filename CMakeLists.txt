@@ -39,5 +39,6 @@ add_executable(bitboard main.cpp
         core/Book.h
         core/PGN_Parser.cpp
         core/PGN_Parser.h
+        config.h
 
 )

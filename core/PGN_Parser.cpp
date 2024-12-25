@@ -1,10 +1,12 @@
 #include "PGN_Parser.h"
 
 #include <fstream>
-#include <sstream>
-#include "../Moves/Move_Generation.h"
 #include <regex>
+#include <sstream>
 #include <typeinfo>
+#include "../Moves/Move_Generation.h"
+
+#include "../engine/Evaluation.h"
 
 std::vector<PGN_Game> PGN_Parser::Parse_PGN_File(const std::string &filename) {
     std::vector<PGN_Game> games;
@@ -120,7 +122,7 @@ PGN_Game PGN_Parser::Parse_Single_Game(PGN_Game game, const std::string& gameTex
             }
         }
         Parse_Single_Move(game, token);
-        game.board.Print_Detailed_Board();
+        // game.board.Print_Detailed_Board();
 
     }
 
@@ -150,11 +152,9 @@ PieceType Piece_Identifier(const char& token) {
     }
 }
 
-int Get_File_Index_From_Move(const std::string& moveStr) {
-    if (moveStr.empty()) return -1;
+int Get_File_Index_From_Move(const char& moveStr) {
 
-
-    char file = std::tolower(moveStr[0]);
+    const char file = std::tolower(moveStr);
     if (file >= 'a' && file <= 'h') {
         return file - 'a';
     }
@@ -162,156 +162,112 @@ int Get_File_Index_From_Move(const std::string& moveStr) {
     return -1;
 }
 
-void Parse_Promotion(PGN_Game& game, const std::string &gameText) {
-    std::string pieceMoveDetails = gameText;
-    pieceMoveDetails = std::regex_replace(pieceMoveDetails, std::regex("="),"");
+U64 Get_Identifying_Mask(std::string& moveStr) {
+    U64 identifyingMask = ~0ULL;
+    while (!moveStr.empty()) {
+        const char rankOrFile = moveStr.front();
+        moveStr = moveStr.substr(1, moveStr.length() - 1);
+        if (std::isdigit(rankOrFile)) {
+            identifyingMask &= RANKS[(rankOrFile - '0') - 1];
+        }
+        else if (std::isalpha(rankOrFile)) {
+            identifyingMask &= FILES[Get_File_Index_From_Move(rankOrFile)];
+        }
+    }
+    return identifyingMask;
+}
+
+
+void Parse_Promotion(PGN_Game& game, std::string &gameText) {
     const PieceColour colour = game.board.moveHistory.size() % 2 == 0 ? WHITE : BLACK;
 
-    const PieceType promotionPiece = Piece_Identifier(pieceMoveDetails.back());
-    pieceMoveDetails.pop_back();
-    U64 identifyingMask = ~0ULL;
+    const PieceType promotionPiece = Piece_Identifier(gameText.back());
+    gameText = gameText.substr(0, gameText.length() - 2);
 
-    if (std::isdigit(pieceMoveDetails[0])) {
-        identifyingMask = RANKS[(pieceMoveDetails[0] - '0') - 1];
-    }
-    else {
-        identifyingMask = FILES[Get_File_Index_From_Move(pieceMoveDetails)];
-    }
+    const Squares destination = String_To_Square(gameText.substr(gameText.length() - 2));
+    gameText = gameText.substr(0, gameText.length() - 2);
 
-    if (pieceMoveDetails.length() == 2) {
-        const Squares destination = String_To_Square(pieceMoveDetails);
-        U64 pieceBB = game.board.Get_Piece_Bitboard(PAWN, colour) & identifyingMask;
+    const U64 identifyingMask = Get_Identifying_Mask(gameText);
 
-        while (pieceBB) {
-            int position = Get_LS1B_Index(pieceBB);
-            pieceBB &= pieceBB - 1;
-            const U64 pieceMovement = MoveGeneration::Get_Piece_Attacks(PAWN, position, colour, game.board);
-            // Squares destination = String_To_Square(pieceMoveDetails);
+    U64 pieceBB = game.board.Get_Piece_Bitboard(PAWN, colour) & identifyingMask;
 
+    int position = 0;
+    while (pieceBB) {
+        position = Get_LS1B_Index(pieceBB);
+        pieceBB &= pieceBB - 1;
+        const U64 pieceMovement = MoveGeneration::Get_Piece_Attacks(PAWN, position, colour, game.board);
+        if (pieceMovement & (1ULL << destination)) {
+            break;
         }
-
-
-
     }
+
+    Move move(static_cast<Squares>(position), destination, PAWN, colour);
+    Board_Analyser::Promote_Pawn(move, promotionPiece, game.board);
+    Board_Analyser::Move_Piece(move, game.board);
+    game.board.moveHistory.push_back(move);
 
 }
 
-void PGN_Parser::Parse_Single_Move(PGN_Game& game, const std::string &gameText) {
-    // PAWN
+void PGN_Parser::Parse_Single_Move(PGN_Game& game, std::string &gameText) {
+
+    std::string possibleWrong = gameText;
+    // std::cout << "PARSING MOVE: " << gameText << std::endl;
+    // std::cout << "Move number: " << game.board.moveHistory.size() << std::endl;
+
     const PieceColour colour = game.board.moveHistory.size() % 2 == 0 ? WHITE : BLACK;
-    std::cout << "Move number: " << game.board.moveHistory.size() << std::endl;
-    const PieceType piece = Piece_Identifier(gameText[0]);
-    std::string pieceMoveDetails = gameText;
-    if (piece != PAWN) {
-        pieceMoveDetails = pieceMoveDetails.substr(1, pieceMoveDetails.length() - 1);
-    }
 
+    gameText = std::regex_replace(gameText, std::regex("\\+"),"");
 
-    pieceMoveDetails = std::regex_replace(pieceMoveDetails, std::regex("+"),"");
-    pieceMoveDetails = std::regex_replace(pieceMoveDetails, std::regex("x"),"");
-
-    if (pieceMoveDetails.find('=') != std::string::npos) {
-        Parse_Promotion(game, gameText);
-    }
-
-
-    if (pieceMoveDetails == "O-O") {
+    if (gameText == "O-O") {
         Move move(colour == WHITE ? e1 : e8, colour == WHITE ? g1 : g8, KING, colour);
         Board_Analyser::Make_Move(move, false, game.board);
-        game.board.Print_Move_Details(move);
+        // game.board.Print_Move_Details(move);
         return;
     }
-    if (pieceMoveDetails == "O-O-O") {
+    if (gameText == "O-O-O") {
         Move move(colour == WHITE ? e1 : e8, colour == WHITE ? c1 : c8, KING, colour);
         Board_Analyser::Make_Move(move, false, game.board);
-        game.board.Print_Move_Details(move);
+        // game.board.Print_Move_Details(move);
         return;
     }
 
-    if (pieceMoveDetails.length() == 2) {
-        const Squares destination = String_To_Square(pieceMoveDetails);
-        U64 pieceBB = game.board.Get_Piece_Bitboard(piece, colour);
+    const PieceType piece = Piece_Identifier(gameText[0]);
 
-        while (pieceBB) {
-            int position = Get_LS1B_Index(pieceBB);
-            pieceBB &= pieceBB - 1;
-            const U64 pieceMovement = MoveGeneration::Get_Piece_Attacks(piece, position, colour, game.board);
-
-            if (pieceMovement & (1ULL << destination)) {
-                Move move(static_cast<Squares>(position), destination, piece, colour);
-                Board_Analyser::Make_Move(move, false, game.board);
-                game.board.Print_Move_Details(move);
-                return;
-            }
-        }
+    if (piece != PAWN) {
+        gameText = gameText.substr(1, gameText.length() - 1);
     }
 
-    if (pieceMoveDetails.length() == 3) {
-        U64 identifyingMask = 0ULL;
-        if (std::isdigit(pieceMoveDetails[0])) {
-            identifyingMask = RANKS[(pieceMoveDetails[0] - '0') - 1];
-        }
-        else {
-            identifyingMask = FILES[Get_File_Index_From_Move(pieceMoveDetails)];
-        }
-        pieceMoveDetails = pieceMoveDetails.substr(1, pieceMoveDetails.length() - 1);
-        U64 pieceInFile = game.board.Get_Piece_Bitboard(piece, colour) & identifyingMask;
+    gameText = std::regex_replace(gameText, std::regex("x"), "");
 
-        while (pieceInFile) {
-            const int position = Get_LS1B_Index(pieceInFile);
-            pieceInFile &= pieceInFile - 1;
-
-            const U64 pieceAttacks = MoveGeneration::Get_Piece_Attacks(piece, position, colour, game.board);
-            Squares destination = String_To_Square(pieceMoveDetails);
-
-            if (pieceAttacks & (1ULL << destination)) {
-                Move move(static_cast<Squares>(position), destination, piece, colour);
-                Board_Analyser::Make_Move(move, false, game.board);
-                game.board.Print_Move_Details(move);
-                return;
-            }
-        }
+    if (gameText.find('=') != std::string::npos) {
+        Parse_Promotion(game, gameText);
+        return;
     }
-    // dc1=Q
-    if (pieceMoveDetails.length() > 3) {
-        pieceMoveDetails = std::regex_replace(pieceMoveDetails, std::regex("="),"");
-        const PieceType promotionPiece = Piece_Identifier(pieceMoveDetails.back());
-        pieceMoveDetails.pop_back();
-        U64 identifyingMask = ~0ULL;
-        std::string destinationString = pieceMoveDetails.substr(pieceMoveDetails.length() - 2,
-                                                                  pieceMoveDetails.length());
 
-        if (std::isdigit(pieceMoveDetails[0])) {
-            identifyingMask = RANKS[(pieceMoveDetails[0] - '0') - 1];
+    const Squares destination = String_To_Square(gameText.substr(gameText.length() - 2));
+    gameText = gameText.substr(0, gameText.length() - 2);
+
+    const U64 identifyingMask = Get_Identifying_Mask(gameText);
+
+    U64 pieceBB = game.board.Get_Piece_Bitboard(piece, colour) & identifyingMask;
+    int position = 0;
+
+    while (pieceBB) {
+        position = Get_LS1B_Index(pieceBB);
+        pieceBB &= pieceBB - 1;
+        U64 pieceMovement = Engine::moveGen.Get_Legal_Moves(position, colour, piece, game.board);
+        if (pieceMovement & (1ULL << destination)) {
+            break;
         }
-        else {
-            identifyingMask = FILES[Get_File_Index_From_Move(pieceMoveDetails)];
-        }
 
-        Squares destination = String_To_Square(destinationString);
-        U64 pieceBB = game.board.Get_Piece_Bitboard(piece, colour) & identifyingMask;
-
-        while (pieceBB) {
-            int position = Get_LS1B_Index(pieceBB);
-            pieceBB &= pieceBB - 1;
-            const U64 pieceMovement = MoveGeneration::Get_Piece_Attacks(piece, position, colour, game.board);
-
-            if (pieceMovement & (1ULL << destination)) {
-                Move move(static_cast<Squares>(position), destination, piece, colour);
-                const U64 enemyBB = move.Get_Colour() == WHITE ? game.board.Get_Black_Pieces() :
-                                                                 game.board.Get_White_Pieces();
-
-                if (enemyBB & (1ULL << move.Get_To())) {
-                    Board_Analyser::Handle_Captures(move, game.board);
-                }
-                Board_Analyser::Promote_Pawn(move, promotionPiece, game.board);
-                Board_Analyser::Move_Piece(move, game.board);
-                game.board.moveHistory.push_back(move);
-                game.board.Print_Move_Details(move);
-                return;
-            }
-        }
     }
-    std::cout << game.board.moveHistory.size() << " TAWEAKISFNASDFHIAJDKFAHDJFA       " << pieceMoveDetails << std::endl;
+    // const auto position = static_cast<Squares>(Get_LS1B_Index(pieceBB));
+
+    Move move(static_cast<Squares>(position), destination, piece, colour);
+
+    if (Board_Analyser::Make_Move(move, false, game.board)) return;
+
+    std::cout << "PARSING MOVE: " << possibleWrong << std::endl;
+    std::cout << game.board.moveHistory.size() << " TAWEAKISFNASDFHIAJDKFAHDJFA       " << gameText << std::endl;
 
 }
