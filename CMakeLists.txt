@@ -40,5 +40,7 @@ add_executable(bitboard main.cpp
         core/PGN_Parser.cpp
         core/PGN_Parser.h
         config.h
+        Board/Zobrist.cpp
+        Board/Zobrist.h
 
 )

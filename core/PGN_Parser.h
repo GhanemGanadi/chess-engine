@@ -4,11 +4,11 @@
 
 struct PGN_Game {
     Board board;
-    std::string result;
+    double result = 0;
     int whiteElo = 0;
     int blackElo = 0;
 
-    PGN_Game() : whiteElo(0), blackElo(0) {
+    PGN_Game() {
         board.Initialise_From_Fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
    }
 };

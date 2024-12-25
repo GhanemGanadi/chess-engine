@@ -4,6 +4,8 @@
 #include <regex>
 #include <sstream>
 #include <typeinfo>
+#include <unordered_map>
+
 #include "../Moves/Move_Generation.h"
 
 #include "../engine/Evaluation.h"
@@ -30,7 +32,7 @@ std::vector<PGN_Game> PGN_Parser::Parse_PGN_File(const std::string &filename) {
                         gameText += line1 + "\n";
                         gameText += line2;
             currentGame = Parse_Result_Elo(currentGame, gameText);
-            std::cout << "------- NEW GAME -------" << std::endl;
+            // std::cout << "------- NEW GAME -------" << std::endl;
             gameInProgress = true;
 
         }
@@ -59,13 +61,13 @@ PGN_Game PGN_Parser::Parse_Result_Elo(PGN_Game& game, const std::string &gameTex
     std::getline(ss, line3);
 
     if (line1.find("0-1") != std::string::npos) {
-        game.result = "Black win";
+        game.result = -1;
     }
     else if (line1.find("1-0") != std::string::npos) {
-        game.result = "White win";
+        game.result = 1;
     }
-    else {
-        game.result = "Draw";
+    else if (line1.find("1/2-1/2") != std::string::npos) {
+        game.result = -0.5;
     }
 
     size_t white_quote_start = line2.find('\"');
@@ -271,3 +273,6 @@ void PGN_Parser::Parse_Single_Move(PGN_Game& game, std::string &gameText) {
     std::cout << game.board.moveHistory.size() << " TAWEAKISFNASDFHIAJDKFAHDJFA       " << gameText << std::endl;
 
 }
+
+
+

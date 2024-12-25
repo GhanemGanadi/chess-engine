@@ -61,3 +61,4 @@ namespace Move_Parsing {
     [[nodiscard]] Move Parse_Move(const std::string& input, PieceColour colour, const Board& board);
     bool Check_Move(const std::string& fromSquare, const std::string& toSquare);
 }
+
