@@ -2,6 +2,7 @@
 #include <string>
 #include "../Board/Board.h"
 
+
 struct PGN_Game {
     Board board;
     double result = 0;

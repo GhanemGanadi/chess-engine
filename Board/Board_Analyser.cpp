@@ -483,7 +483,7 @@ namespace Board_Analyser {
     void Promote_Pawn(Move& move, const PieceType promotionPiece, Board& board) {
 
         const U64 enemyBB = move.Get_Colour() == WHITE ? board.Get_Black_Pieces() : board.Get_White_Pieces();
-        if (enemyBB & (1ULL << move.Get_To())){ Handle_Captures(move, board); }
+        // if (enemyBB & (1ULL << move.Get_To())){ Handle_Captures(move, board); }
 
         U64 newPieceBitboard = board.Get_Piece_Bitboard(promotionPiece, move.Get_Colour());
         newPieceBitboard = Set_Bit(newPieceBitboard, move.Get_To());

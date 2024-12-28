@@ -18,6 +18,7 @@ private:
     bool isEnPassant;
 
 public:
+    int score = 0;
     Move(const Squares from, const Squares to, const PieceType piece, const PieceColour colour)
         : fromSquare(from)
         , toSquare(to)

@@ -16,6 +16,7 @@ core/Game_List.txt
 config.h
 core/test.txt
 core/opening-book.txt
+masters.txt
 
 # Compiled files
 *.o

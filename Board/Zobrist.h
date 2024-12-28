@@ -4,7 +4,6 @@
 #include "Board.h"
 
 class Zobrist {
-private:
     static const int PIECE_TYPES = 12;
     static const int SQUARES = 64;
 
@@ -13,10 +12,12 @@ private:
     U64 Castling[16];
     U64 En_Passant_File[8];
 
-    int Get_Piece_Index(PieceColour colour, PieceType piece) const;
+    static int Get_Piece_Index(PieceColour colour, PieceType piece) ;
     int Get_Castling_Index(const Board& board) const;
 
 public:
     void Initialise();
+    [[nodiscard]] U64 Calculate_Hash_Initial_Position() const;
+    U64 Zobrist_Make_Move(const Move& move, U64 hash) const;
     U64 Calculate_Hash(const Board& board) const;
 };

@@ -232,6 +232,7 @@ Move MoveGeneration::Detect_Capture(Move& move, const Board& board) {
 
 std::vector<Move> MoveGeneration::Generate_All_Moves(const PieceColour colour, Board& board) const {
     std::vector<Move> allMoves;
+    Board tempBoard = board;
 
     for(const PieceType piece : {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING}) {
         U64 pieceBB = board.Get_Piece_Bitboard(piece, colour);
@@ -247,29 +248,32 @@ std::vector<Move> MoveGeneration::Generate_All_Moves(const PieceColour colour, B
                 legalMoves &= (legalMoves - 1);
 
                 Move tempMove(static_cast<Squares>(from), static_cast<Squares>(to), piece, colour);
+
                 if (piece == PAWN) {
                     if (Board_Analyser::Can_Promote(tempMove)) {
-
                         for (const PieceType differentPieces : {KNIGHT, BISHOP, ROOK, QUEEN}) {
                             Move promotionMove = tempMove;
                             promotionMove.Set_Promotion_Piece(differentPieces);
                             Board_Analyser::Set_Move_Flags(promotionMove, board);
-                            allMoves.push_back(promotionMove);
+                            tempBoard = board;
+                            if (Board_Analyser::Make_Move(promotionMove, true, tempBoard)) {
+                                allMoves.push_back(promotionMove);
+                            }
                         }
                         continue;
                     }
                 }
-                if (Board_Analyser::Make_Move(tempMove, true, board))
-                {
-                    allMoves.push_back(tempMove);
-                    board.Undo_Move(false);
-                }
-                // Board_Analyser::Set_Move_Flags(tempMove, board);
-                // allMoves.push_back(tempMove);
 
+                tempBoard = board;
+                if (Board_Analyser::Make_Move(tempMove, true, tempBoard)) {
+                    Board_Analyser::Set_Move_Flags(tempMove, board);
+                    allMoves.push_back(tempMove);
+                }
             }
         }
     }
+
+    return allMoves;
 }
 void MoveGeneration::Display_All_Moves(const std::vector<Move>& moves) {
     if(moves.empty()) return;

@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include "../Board/Board.h"
 
+#include "../Board/Zobrist.h"
 #include "PGN_Parser.h"
 
 struct OpeningPosition {
@@ -16,19 +17,27 @@ struct OpeningPosition {
 struct MoveStats {
     std::string move;
     double results;
+};
 
+struct BestMoveStat {
+    Move bestMove;
+    double bestResults;
 };
 
 class OpeningBook {
-
-    // Key: FEN string, Value: map of win ratio and the move
-    std::unordered_map<std::string, std::vector<MoveStats>> positions;
+    Zobrist zobrist;
+    std::unordered_map<U64, std::vector<MoveStats>> positions;
 
 
 public:
+    OpeningBook() {
+        zobrist.Initialise();
+    }
+
     void Process_Games(std::vector<PGN_Game>& games);
-    void Save_To_File(std::string filename) const;
-    Move Get_Book_Move(const Board& position);
-    [[nodiscard]] bool Has_Position(const std::string& fen) const;
-    [[nodiscard]] bool Has_Move(const std::string& fen, const Move& move);
+    void Save_To_File(const std::string& filename) const;
+    BestMoveStat Get_Book_Move(const Board& position);
+    [[nodiscard]] bool Has_Position(U64 hash) const;
+    [[nodiscard]] bool Has_Move(U64 hash, const Move& move);
+
 };

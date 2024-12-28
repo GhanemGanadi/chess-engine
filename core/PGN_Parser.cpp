@@ -3,7 +3,7 @@
 #include <fstream>
 #include <regex>
 #include <sstream>
-#include <typeinfo>
+#include "../Board/Zobrist.h"
 #include <unordered_map>
 
 #include "../Moves/Move_Generation.h"
@@ -127,9 +127,7 @@ PGN_Game PGN_Parser::Parse_Single_Game(PGN_Game game, const std::string& gameTex
         // game.board.Print_Detailed_Board();
 
     }
-
     return game;
-
 }
 
 PieceType Piece_Identifier(const char& token) {
@@ -205,6 +203,10 @@ void Parse_Promotion(PGN_Game& game, std::string &gameText) {
 
     Move move(static_cast<Squares>(position), destination, PAWN, colour);
     Board_Analyser::Promote_Pawn(move, promotionPiece, game.board);
+    const U64 enemyBB = colour == WHITE ? game.board.Get_Black_Pieces() : game.board.Get_White_Pieces();
+    if (1ULL << destination & enemyBB) {
+        Board_Analyser::Handle_Captures(move, game.board);
+    }
     Board_Analyser::Move_Piece(move, game.board);
     game.board.moveHistory.push_back(move);
 

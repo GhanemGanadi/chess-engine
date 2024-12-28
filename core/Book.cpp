@@ -19,16 +19,18 @@ std::string Move_To_String(Move move) {
     return moveString;
 }
 
-bool OpeningBook::Has_Position(const std::string& fen) const {
-    return positions.contains(fen);
+bool OpeningBook::Has_Position(const U64 hash) const {
+    return positions.contains(hash);
 }
 
-bool OpeningBook::Has_Move(const std::string& fen, const Move& move) {
+bool OpeningBook::Has_Move(const U64 hash, const Move& move) {
     std::string moveString = Move_To_String(move);
-    std::vector<MoveStats>& stats = positions[fen];
+    std::vector<MoveStats>& stats = positions[hash];
 
     for (const MoveStats& stat : stats) {
-        if (stat.move == moveString){ return true;}
+        if (stat.move == moveString) {
+            return true;
+        }
     }
     return false;
 }
@@ -36,22 +38,20 @@ bool OpeningBook::Has_Move(const std::string& fen, const Move& move) {
 void OpeningBook::Process_Games(std::vector<PGN_Game> &games) {
 
     for (PGN_Game &game : games) {
-        Board currentGame;
-        currentGame.Initialise_From_Fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        U64 currentGameHash = zobrist.Calculate_Hash_Initial_Position();
 
         for (size_t moveIndex = 0; moveIndex < std::min(size_t(20), game.board.moveHistory.size());
                                             moveIndex++) {
 
-            std::string fen = currentGame.Board_To_Fen();
 
             Move& move = game.board.moveHistory[moveIndex];
 
-            if (!Has_Move(fen, move)) {
+            if (!Has_Move(currentGameHash, move)) {
                 MoveStats move_stats = MoveStats(Move_To_String(move), game.result);
-                positions[fen].push_back(move_stats);
+                positions[currentGameHash].push_back(move_stats);
             }
             else {
-                std::vector<MoveStats>& stats = positions[fen];
+                std::vector<MoveStats>& stats = positions[currentGameHash];
                 for (MoveStats& stat : stats) {
                     if (stat.move == Move_To_String(move)) {
                         stat.results += game.result;
@@ -59,15 +59,7 @@ void OpeningBook::Process_Games(std::vector<PGN_Game> &games) {
                 }
             }
 
-            if (move.Get_Promotion_Piece() != NO_PIECE) {
-                auto promotionMove = Move(move.Get_From(), move.Get_To(), PAWN, move.Get_Colour());
-                Board_Analyser::Promote_Pawn(promotionMove, move.Get_Promotion_Piece(), currentGame);
-                Board_Analyser::Move_Piece(move, currentGame);
-                currentGame.moveHistory.push_back(move);
-                continue;
-            }
-
-            Board_Analyser::Make_Move(move, true, currentGame);
+            currentGameHash = zobrist.Zobrist_Make_Move(move, currentGameHash);
 
             // std::cout << Square_To_String(move.Get_From()) << " " << Square_To_String(move.Get_To())
                     // << " " << Get_Piece_Name(move.Get_Piece_Type()) << std::endl;
@@ -76,9 +68,7 @@ void OpeningBook::Process_Games(std::vector<PGN_Game> &games) {
 }
 
 
-void OpeningBook::Save_To_File(std::string filename) const {
-    Zobrist zobrist;
-    zobrist.Initialise();
+void OpeningBook::Save_To_File(const std::string& filename) const {
 
     std::ofstream file(filename);
     if (!file.is_open()) {
@@ -86,8 +76,8 @@ void OpeningBook::Save_To_File(std::string filename) const {
         return;
     }
 
-    for (const auto& [fen, movesList] : positions) {
-        file << fen << std::endl;
+    for (const auto& [hash, movesList] : positions) {
+        file << hash << std::endl;
         auto sortedMoves = movesList;
         std::ranges::sort(sortedMoves, [](const MoveStats& a, const MoveStats& b) {
             return a.results > b.results;
@@ -102,15 +92,17 @@ void OpeningBook::Save_To_File(std::string filename) const {
     file.close();
 }
 
-Move Find_Highest_Result(std::string& moveList) {
+BestMoveStat Find_Highest_Result(const std::string& moveList) {
     std::istringstream ss(moveList);
     std::string token;
     double maxResult = -std::numeric_limits<double>::infinity();
     Move bestMove(a8, a8, NO_PIECE, NO_COLOUR);
     while (std::getline(ss, token, ' ')) {
+
         token = std::regex_replace(token, std::regex("\\:"),"");
         Squares position = String_To_Square(token.substr( 0,2));
         token = token.substr(2);
+
         Squares destination = String_To_Square(token.substr(0,2));
         token = token.substr(2);
 
@@ -121,25 +113,27 @@ Move Find_Highest_Result(std::string& moveList) {
             bestMove.Set_To(destination);
         }
     }
-
-    return bestMove;
+    return BestMoveStat(bestMove, maxResult);
 }
 
 
-Move OpeningBook::Get_Book_Move(const Board &position) {
-    std::string fen = position.Board_To_Fen();
+BestMoveStat OpeningBook::Get_Book_Move(const Board &position) {
+    U64 hash = zobrist.Calculate_Hash(position);
     std::string line;
-
     std::ifstream file(OPENING_BOOK_PATH);
 
     while (std::getline(file, line)) {
-        if (line.find(fen) != std::string::npos) {
-            std::cout << "LINE FOUND: " << line << std::endl;
+
+        if (line.find(':') != std::string::npos) { continue; }
+        U64 fileHash = std::stoull(line);
+
+        if (fileHash == hash) {
             std::getline(file, line);
             return Find_Highest_Result(line);
         }
     }
 
+    return BestMoveStat(Move(a8, a8, NO_PIECE, NO_COLOUR), 0);
 }
 
 

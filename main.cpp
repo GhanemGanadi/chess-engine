@@ -1,3 +1,6 @@
+#include <fstream>
+
+
 #include "Board/Board.h"
 #include "Board/Zobrist.h"
 #include "Game/game.h"
@@ -8,17 +11,17 @@
 
 int main() {
 
-    Zobrist zobrist = Zobrist();
     Board board;
+    OpeningBook book = OpeningBook();
     board.Initialise_From_Fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    std::vector<PGN_Game> games = PGN_Parser::Parse_PGN_File(PGN_FILE_PATH);
+    std::string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    Game game = Game(fen);
 
-    OpeningBook book;
-    book.Process_Games(games);
-    book.Save_To_File(OPENING_BOOK_PATH);
-    auto bestmove = book.Get_Book_Move(board);
-    board.Print_Move_Details(bestmove);
+    game.Play_Game();
+    //
+    //
+    // std::vector<PGN_Game> games = PGN_Parser::Parse_PGN_File(PGN_FILE_PATH);
+    // book.Process_Games(games);
+    // book.Save_To_File(OPENING_BOOK_PATH);
 
-
-    return 0;
 }

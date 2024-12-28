@@ -8,6 +8,7 @@ namespace Engine {
     class Search {
         static constexpr int MAX_DEPTH = 4;
 
+
         public:
         static int Minimax(Board& board, int depth, int alpha, int beta, PieceColour colour);
 
