@@ -1,4 +1,3 @@
-// Move_Generation.cpp
 #include "Move_Generation.h"
 
 std::array<U64, 64> MoveGeneration::kingMoves;
@@ -60,23 +59,19 @@ U64 MoveGeneration::Generate_Pawn_En_Passant(const int square, const PieceColour
 
     const Move& previousMove = board.moveHistory.back();
 
-    // Check if last move was pawn double push
     if(previousMove.Get_Piece_Type() != PAWN ||
        (abs(previousMove.Get_To() - previousMove.Get_From())) != 16) {
         return false;
     }
 
-    // Check if capturing pawn is on correct rank
     const int fromRank = square / 8;
     if(colour == WHITE && fromRank != 3) return moves;
     if(colour == BLACK && fromRank != 4) return moves;
 
-    // Check if pawns are adjacent
     const int moveFile = square % 8;
     const int captureFile = previousMove.Get_To() % 8;
     if(abs(moveFile - captureFile) != 1) return moves;
 
-    // Generate the en passant capture square
     const int captureSquare = previousMove.Get_To() + (colour == WHITE ? -8 : 8);
     moves |= 1ULL << captureSquare;
 
@@ -143,7 +138,6 @@ U64 MoveGeneration::Filter_Legal_Moves(U64 moves, const int square, const PieceC
         }
 
         if (pieceType == PAWN){ Board_Analyser::Handle_En_Passant(tempMove, board); }
-        // Board_Analyser::Debug_Board_State(board);
         Board_Analyser::Move_Piece(tempMove, board);
         board.moveHistory.push_back(tempMove);
 
@@ -154,12 +148,7 @@ U64 MoveGeneration::Filter_Legal_Moves(U64 moves, const int square, const PieceC
         if(Board_Analyser::Is_King_In_Check(kingBB, colour, board) == -1) {
             legalMoves |= (1ULL << moveSquare);
         }
-
-
         board.Undo_Move(true);
-        // Board_Analyser::Debug_Board_State(board);
-
-
     }
 
     return legalMoves;

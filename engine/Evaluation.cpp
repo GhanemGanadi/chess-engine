@@ -33,7 +33,7 @@ namespace Engine {
 
             while (positionBB) {
                 int square = Get_LS1B_Index(positionBB);
-                if (colour == BLACK) {FLIP_SQUARE(square); }
+                if (colour == BLACK) { square = FLIP_SQUARE(square); }
                 positionBB &= positionBB - 1;
 
                 switch (piece) {
@@ -169,6 +169,11 @@ namespace Engine {
         return score;
     }
 
+    int Evaluator::Evaluate_Bishop_Pair(const Board &board, const PieceColour colour) {
+        return Count_Bits(board.Get_Piece_Bitboard(BISHOP, colour)) >= 2 ? BISHOP_PAIR_BONUS : 0;
+    }
+
+
     bool Evaluator::Is_Knight_Trapped(const Board& board, const int square, const PieceColour colour) {
 
         if (colour == WHITE) {
@@ -210,11 +215,9 @@ namespace Engine {
 
 
     int Evaluator::Square_Control_Value(const int square, const Game_Phase phase, Board& board) {
-        //
         int score = 0;
         const U64 target_square = 1ULL << square;
 
-        // Process white pieces
         U64 whitePieces = board.Get_White_Pieces();
 
         while(whitePieces) {
@@ -223,7 +226,6 @@ namespace Engine {
 
             const U64 control = moveGen.Get_Legal_Moves(piece_square, WHITE, piece, board);
 
-            // If this piece controls our target square
             if(control & target_square) {
                 score += Get_Piece_Value(piece, phase);
             }
@@ -283,10 +285,8 @@ namespace Engine {
     }
 
     int Evaluator::Evaluate_King_Safety(const Board &board, const PieceColour colour) {
-        int score = Pawn_Evaluation::Evaluate_Pawn_Shield(board, WHITE) + Pawn_Evaluation::Evaluate_Open_File(board, WHITE);
+        int score = Pawn_Evaluation::Evaluate_Pawn_Shield(board, colour) + Pawn_Evaluation::Evaluate_Open_File(board, colour);
         U64 kingBB = board.Get_Piece_Bitboard(KING, colour);
-
-
 
         return score;
     }
@@ -296,13 +296,14 @@ namespace Engine {
     }
 
 
-    int Evaluator::Evaluate_Complete_Position(Board &board, const Game_Phase phase, PieceColour colour) {
+    int Evaluator::Evaluate_Complete_Position(Board &board, const Game_Phase phase, const PieceColour colour) {
         int score = 0;
 
         score += Evaluate_Material(board, colour, phase);
 
         score += Evaluate_Piece_Mobility(board, colour);
         score += Evaluate_King_Safety(board, colour);
+        score += Evaluate_Bishop_Pair(board, colour);
         score += Pawn_Evaluation::Complete_Pawn_Evaluation(board, colour);
 
 

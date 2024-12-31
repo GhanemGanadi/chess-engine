@@ -1,13 +1,13 @@
 #include "Search.h"
-
 #include <algorithm>
-
 #include "../Board/Board_Analyser.h"
 #include "../Moves/Move_Generation.h"
 #include "../core/Bitboard_Operations.h"
 #include "../core/Book.h"
 #include "Evaluation.h"
 #include "Phases.h"
+
+
 namespace Engine {
     MoveGeneration MoveGeneration;
     OpeningBook OpeningBook;
@@ -43,11 +43,7 @@ namespace Engine {
         }
 
         for (Move& move : allMoves) {
-            if (!Board_Analyser::Make_Move(move, true, board)) {
-                continue;
-            }
-
-            int score = -Minimax(board, depth - 1, -INFINITY_SCORE, -bestScore,
+            const int score = Minimax(board, depth, -INFINITY_SCORE, INFINITY_SCORE,
                                colour == WHITE ? BLACK : WHITE);
 
             board.Undo_Move(false);
@@ -79,10 +75,10 @@ namespace Engine {
             [](const Move& a, const Move& b) { return a.score > b.score; });
     }
 
-    int Search::Minimax(Board &board, const int depth, int alpha, const int beta, const PieceColour colour) {
+    int Search::Minimax(Board &board, const int depth, int alpha, int beta, const PieceColour colour) {
         if (depth == 0) {
             const Game_Phase phase = Phase::Phase_Detection(board);
-            int score = Evaluator::Evaluate_Complete_Position(board, phase, WHITE) -
+            const int score = Evaluator::Evaluate_Complete_Position(board, phase, WHITE) -
                         Evaluator::Evaluate_Complete_Position(board, phase, BLACK);
 
             return score;
@@ -92,23 +88,26 @@ namespace Engine {
         OrderMoves(allMoves, colour);
 
         if (allMoves.empty()) {
-            return -MATE_SCORE + (MAX_DEPTH - depth);
+            const int score = MATE_SCORE * (MAX_DEPTH - depth);
+            return colour == WHITE ? score : -score;
         }
 
-        int bestScore = -INFINITY_SCORE;
+        int bestScore = colour == WHITE ? -INFINITY_SCORE : INFINITY_SCORE;
 
         for (Move& move : allMoves) {
 
             Board_Analyser::Make_Move(move, true, board);
-            int score = -Minimax(board, depth - 1, -beta, -alpha,
+            int score = Minimax(board, depth - 1, alpha, beta,
                                colour == WHITE ? BLACK : WHITE);
 
             board.Undo_Move(false);
 
-            bestScore = std::max(bestScore, score);
-            alpha = std::max(alpha, score);
+            bestScore = colour == WHITE ? std::max(bestScore, score) : std::min(bestScore, score);
 
-            if (alpha >= beta) {
+            if (colour == WHITE) { alpha = std::max(alpha, score); }
+            else { beta = std::min(beta, score); }
+
+            if (beta <= alpha) {
                 break;
             }
         }

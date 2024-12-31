@@ -10,11 +10,7 @@ enum class Game_State {
     STALEMATE,
     FIFTY_MOVE_DRAW,
     INSUFFICIENT_MATERIAL,
-    THREEFOLD_REPETITION,
-    DRAW_BY_AGREEMENT,     // Optional if implementing player agreement
-    DEAD_POSITION,         // Position where no sequence of legal moves can lead to checkmate
-    RESIGNATION,           // Optional if implementing player resignation
-    TIME_FORFEIT          // Optional if implementing time controls
+    THREEFOLD_REPETITION
 };
 
 
@@ -35,6 +31,7 @@ class Board {
         blackPieces = blackPawn | blackKnight | blackBishop | blackRook | blackQueen | blackKing;
         allPieces = whitePieces | blackPieces;
     }
+
     Game_State boardGameState = Game_State::ACTIVE;
 
 public:
@@ -44,15 +41,11 @@ public:
         whitePieceArray = {whitePawn, whiteKnight, whiteBishop, whiteRook, whiteQueen, whiteKing};
     }
     struct CastlingRights {
-        // If moves == 0, rook hasn't moved and castling is possible
         int whiteKingSideRookMoves = 0;
         int whiteQueenSideRookMoves = 0;
         int blackKingSideRookMoves = 0;
         int blackQueenSideRookMoves = 0;
     } castlingRights;
-
-
-
 
     std::vector<Move> moveHistory;
     PieceColour currentTurn = WHITE;
@@ -72,13 +65,9 @@ public:
     }
 
     void Undo_Move(const bool pseudoLegal) {
-        if(moveHistory.empty()) {
-            // std::cout << "ITS EMPTY\n";
-            return;
-        }
+        if(moveHistory.empty()) { return; }
 
         Move previousMove = moveHistory.back();
-        // Print_Move_Details(previousMove);
         moveHistory.pop_back();
 
         if(previousMove.Is_Castling()) {
@@ -86,7 +75,6 @@ public:
             if(!pseudoLegal) {Set_Decrement_Half_Clock();}
             return;
         }
-        // Check if rook moved back to original square
         if (previousMove.Get_Piece_Type() == ROOK) {
             if (previousMove.Get_From() == a1) {
                 Decrement_White_Queen_Side_Rook_Moves();
@@ -113,7 +101,7 @@ public:
         }
 
         Reverse_Promotion(previousMove);
-        Reverse_Capture(previousMove, previousMove.Get_Promotion_Piece() != NO_PIECE);
+        Reverse_Capture(previousMove);
 
         const PieceColour pieceColour = previousMove.Get_Colour();
         const PieceType piece = previousMove.Get_Piece_Type();
@@ -159,28 +147,20 @@ public:
         const PieceColour colour = move.Get_Colour();
         const PieceType promotedPieceType = move.Get_Promotion_Piece();
 
-        // Remove promoted piece
         U64 promotedPieceBB = Get_Piece_Bitboard(promotedPieceType, colour);
         promotedPieceBB = Remove_Bit(promotedPieceBB, move.Get_To());
         Set_Piece_Bitboard(promotedPieceType, colour, promotedPieceBB);
 
     }
 
-    void Reverse_Capture(const Move& move, const bool capturePromote) {
+    void Reverse_Capture(const Move &move) {
 
         if (!move.Is_Capture()) {return ; }
         const PieceColour colour = move.Get_Colour();
         const PieceColour enemyColour = colour == WHITE ? BLACK : WHITE;
         const PieceType capturedPiece = move.Get_Captured_Piece();
-        const PieceType piece = move.Get_Piece_Type();
 
-        U64 pieceBB = Get_Piece_Bitboard(piece, colour);
         U64 capturedPieceBB = Get_Piece_Bitboard(capturedPiece, enemyColour);
-
-        pieceBB = Remove_Bit(pieceBB, move.Get_To());
-        pieceBB = Set_Bit(pieceBB, move.Get_From());
-
-
         capturedPieceBB = Set_Bit(capturedPieceBB, move.Get_Captured_Destination());
         Set_Piece_Bitboard(capturedPiece, enemyColour, capturedPieceBB);
     }
@@ -248,7 +228,6 @@ public:
 
         return fen;
     }
-
 
     void Initialise_From_Fen(const std::string& fen) {
         // Initialize white pieces
@@ -490,9 +469,6 @@ public:
                 int position = file * 8 + rank;
                 char pieceChar = '.';
 
-
-                //PAWN, ROOK, KNIGHT, BISHOP, QUEEN, KING
-                //blackPawn, blackKnight, blackBishop, blackRook, blackQueen, blackKing
                 if(Get_Bit(whitePieceArray[0], position)) pieceChar = 'P';
                 else if(Get_Bit(whitePieceArray[1], position)) pieceChar = 'N';
                 else if(Get_Bit(whitePieceArray[2], position)) pieceChar = 'B';

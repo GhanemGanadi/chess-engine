@@ -33,7 +33,9 @@ public:
 
         while(boardState == Game_State::ACTIVE || boardState == Game_State::CHECK) {
             Board tempBoard = board;
+            std::cout << board.Board_To_Fen() << std::endl;
             turnString = currentTurn == WHITE ? "White To Move\n" : "Black To Move\n";
+
             if (currentTurn == WHITE) {
             Move bestMove = Engine::Search::Find_Best_Move(tempBoard, 4 , WHITE);
                 input = Square_To_String(bestMove.Get_From()) + Square_To_String(bestMove.Get_To());

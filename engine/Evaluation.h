@@ -12,17 +12,13 @@ struct PieceValues {
     static constexpr std::array<int, 6> END_GAME_VALUES = {120, 305, 345, 525, 880, 0};
 };
 
-static constexpr int FLIP_SQUARE(const int square) {
-    return square ^ 56;  // Equivalent to square XOR 0x38
-}
+static constexpr int FLIP_SQUARE(const int square) { return square ^ 56; }
 
 namespace Engine {
     inline MoveGeneration moveGen;
 
     class Evaluator {
 
-
-    // White pawns (from White's perspective)
     static constexpr std::array<int, 64> PAWN_TABLE = {
         0,  0,  0,  0,  0,  0,  0,  0,  // a8-h8
        50, 50, 50, 50, 50, 50, 50, 50,  // a7-h7
@@ -34,8 +30,6 @@ namespace Engine {
         0,  0,  0,  0,  0,  0,  0,  0   // a1-h1
    };
 
-
-    // White knight table (from White's perspective)
     static constexpr std::array<int, 64> KNIGHT_TABLE = {
         -50,-40,-30,-30,-30,-30,-40,-50,  // a8-h8
         -40,-20,  0,  0,  0,  0,-20,-40,  // a7-h7
@@ -58,9 +52,6 @@ namespace Engine {
         -20,-10,-10,-10,-10,-10,-10,-20   // a1-h1
     };
 
-
-
-            // White rook table
     static constexpr std::array<int, 64> ROOK_TABLE = {
          0,  0,  0,  0,  0,  0,  0,  0,  // a8-h8
          5, 10, 10, 10, 10, 10, 10,  5,  // a7-h7
@@ -72,8 +63,6 @@ namespace Engine {
          0,  0,  0,  5,  5,  0,  0,  0   // a1-h1
     };
 
-
-    // White queen table
     static constexpr std::array<int, 64> QUEEN_TABLE = {
         -20,-10,-10, -5, -5,-10,-10,-20,  // a8-h8
         -10,  0,  0,  0,  0,  0,  0,-10,  // a7-h7
@@ -85,7 +74,6 @@ namespace Engine {
         -20,-10,-10, -5, -5,-10,-10,-20   // a1-h1
     };
 
-           // King middlegame table (for white)
    static constexpr std::array<int, 64> KING_MIDDLE_GAME_TABLE = {
        -30,-40,-40,-50,-50,-40,-40,-30,  // a8-h8
        -30,-40,-40,-50,-50,-40,-40,-30,  // a7-h7
@@ -97,9 +85,6 @@ namespace Engine {
         20, 30, 10,  0,  0, 10, 30, 20   // a1-h1
    };
 
-
-
-   // King endgame table (for white)
    static constexpr std::array<int, 64> KING_ENDGAME_TABLE = {
        -50,-40,-30,-20,-20,-30,-40,-50,  // a8-h8
        -30,-20,-10,  0,  0,-10,-20,-30,  // a7-h7
@@ -111,16 +96,8 @@ namespace Engine {
        -50,-30,-30,-30,-30,-30,-30,-50   // a1-h1
    };
 
-
-
-    static constexpr std::array<int, 6> MOBILITY_WEIGHTS = {
-        0,    // PAWN (we don't evaluate pawn mobility)
-        4,    // KNIGHT (typically has 8 moves max)
-        5,    // BISHOP (typically has 13 moves max)
-        4,    // ROOK (typically has 14 moves max)
-        3,    // QUEEN (combines bishop and rook mobility)
-        0     // KING (in middlegame, we want restricted mobility)
-    };
+    static constexpr std::array<int, 6> MOBILITY_WEIGHTS = {0, 4, 5, 4, 3, 0};
+    static constexpr int BISHOP_PAIR_BONUS = 30;
 
 
     public:
@@ -129,6 +106,7 @@ namespace Engine {
 
         static int Evaluate_King_Safety(const Board& board, PieceColour colour);
         static int Evaluate_Knight_Position(const Board& board, PieceColour colour);
+        static int Evaluate_Bishop_Pair(const Board& board, PieceColour colour);
         static bool Is_Knight_Trapped(const Board& board, int square, PieceColour colour);
 
         static bool Is_Piece_Hanging(const Board& board, int square, PieceColour colour);

@@ -13,8 +13,9 @@ class King_Evaluation {
 
 
 public:
-    int Evaluate_King_Attack_Zone(const Board& board, PieceColour colour);
-    U64 Get_King_Attack_Zone(const Board& board, PieceColour colour);
+    static int Evaluate_King_Attack_Zone(const Board& board, PieceColour colour);
+    static U64 Get_King_Attack_Zone(const Board& board, PieceColour colour);
+    static int Evaluate_Castling_Status(const Board& board, PieceColour colour);
 
 };
 

@@ -28,7 +28,7 @@ namespace Engine{
             while (pieceBB) {
                 const int singlePiece = Get_LS1B_Index(pieceBB);
                 pieceBB &= pieceBB - 1;
-                U64 pieceInKingZone = kingZone & moveGen.Get_Piece_Attacks(piece, singlePiece, enemyColour, board);
+                U64 pieceInKingZone = kingZone & MoveGeneration::Get_Piece_Attacks(piece, singlePiece, enemyColour, board);
                 if (pieceInKingZone) {
                     score += (Count_Bits(pieceInKingZone) * ATTACK_WEIGHTS[piece]);
                     numberOfAttackers++;
@@ -37,8 +37,12 @@ namespace Engine{
 
         }
         score = score * (NO_OF_ATTACKERS_MULTIPLIER[numberOfAttackers]) / 100;
-        return score * multiplier;
+        return -(score * multiplier);
     }
+
+    int King_Evaluation::Evaluate_Castling_Status(const Board &board, PieceColour colour) {
+    }
+
 
 
 }

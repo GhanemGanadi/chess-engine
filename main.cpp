@@ -13,8 +13,9 @@ int main() {
 
     Board board;
     OpeningBook book = OpeningBook();
-    board.Initialise_From_Fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    std::string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    // std::string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    std::string fen = "r1bk2n1/p1p1np2/Pp1b4/1B1p2p1/3Pp3/1PP1PP2/6Pr/RNBK3R w - - 0 1";
+    // board.Initialise_From_Fen(fen2);
     Game game = Game(fen);
 
     game.Play_Game();
