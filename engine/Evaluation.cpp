@@ -1,6 +1,8 @@
 #include "Evaluation.h"
 
 #include <iomanip>
+
+#include "King.h"
 #include "Pawns.h"
 #include "Phases.h"
 
@@ -127,9 +129,12 @@ namespace Engine {
                         squareScore = QUEEN_TABLE[square];
                     break;
 
-                    case KING:
-                        // Since king has different tables for middlegame and endgame, you might want to check game phase
-                            squareScore = KING_MIDDLE_GAME_TABLE[square];
+                    case KING: {
+                        if (Phase::Phase_Detection(board) == Game_Phase::END_GAME) {
+                            squareScore = KING_ENDGAME_TABLE[square];
+                        }
+                        else { squareScore = KING_MIDDLE_GAME_TABLE[square]; }
+                    }
                     break;
 
                     default:
@@ -284,16 +289,34 @@ namespace Engine {
         std::cout << "     a     b     c     d     e     f     g     h\n\n";
     }
 
-    int Evaluator::Evaluate_King_Safety(const Board &board, const PieceColour colour) {
-        int score = Pawn_Evaluation::Evaluate_Pawn_Shield(board, colour) + Pawn_Evaluation::Evaluate_Open_File(board, colour);
-        U64 kingBB = board.Get_Piece_Bitboard(KING, colour);
-
-        return score;
-    }
-
     bool Evaluator::Is_Piece_Hanging(const Board &board, const int square, const PieceColour colour) {
         return Board_Analyser::Is_Square_Attacked(square, colour, board) == -1;
     }
+
+    int Evaluator::Evaluate_Piece_Safety(const Board &board, PieceColour colour) {
+        int score = 0;
+        const PieceColour enemyColour = colour == WHITE ? BLACK : WHITE;
+
+        for (const PieceType piece : {KNIGHT, BISHOP, ROOK, QUEEN}) {
+            U64 pieceBB = board.Get_Piece_Bitboard(piece, colour);
+
+            while (pieceBB) {
+                const int square = Get_LS1B_Index(pieceBB);
+                pieceBB &= pieceBB - 1;
+
+                const U64 enemyPawns = MoveGeneration::Get_Pawn_Attacks(square, enemyColour) &
+                                        board.Get_Piece_Bitboard(PAWN, enemyColour);
+
+                if (enemyPawns) {
+                    score -= Get_Piece_Value(piece, Phase::Phase_Detection(board));
+                }
+
+                if (Is_Piece_Hanging(board, square, colour)) { score -= 30; }
+            }
+        }
+        return score;
+    }
+
 
 
     int Evaluator::Evaluate_Complete_Position(Board &board, const Game_Phase phase, const PieceColour colour) {
@@ -302,15 +325,14 @@ namespace Engine {
         score += Evaluate_Material(board, colour, phase);
 
         score += Evaluate_Piece_Mobility(board, colour);
-        score += Evaluate_King_Safety(board, colour);
         score += Evaluate_Bishop_Pair(board, colour);
+        score += Evaluate_Piece_Safety(board, colour);
         score += Pawn_Evaluation::Complete_Pawn_Evaluation(board, colour);
+        score += King_Evaluation::Complete_King_Evaluation(board, colour);
+
 
 
         return score;
     }
-
-
-
 
 }

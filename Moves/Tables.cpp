@@ -1,7 +1,5 @@
 #include "Tables.h"
-
 #include "../Board/Board.h"
-
 
 std::vector<U64> Tables::Rook_Magic_Numbers;
 std::vector<U64> Tables::Bishop_Magic_Numbers;

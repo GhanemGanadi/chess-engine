@@ -12,7 +12,7 @@ struct PieceValues {
     static constexpr std::array<int, 6> END_GAME_VALUES = {120, 305, 345, 525, 880, 0};
 };
 
-static constexpr int FLIP_SQUARE(const int square) { return square ^ 56; }
+static constexpr int FLIP_SQUARE(const int square) { return (square ^ 56); }
 
 namespace Engine {
     inline MoveGeneration moveGen;
@@ -104,7 +104,6 @@ namespace Engine {
         static int Evaluate_Material(const Board& board, PieceColour colour, Game_Phase phase);
         static int Evaluate_Piece_Mobility(Board& board, PieceColour colour);
 
-        static int Evaluate_King_Safety(const Board& board, PieceColour colour);
         static int Evaluate_Knight_Position(const Board& board, PieceColour colour);
         static int Evaluate_Bishop_Pair(const Board& board, PieceColour colour);
         static bool Is_Knight_Trapped(const Board& board, int square, PieceColour colour);
@@ -113,6 +112,7 @@ namespace Engine {
 
         static int Evaluate_Complete_Position(Board &board, Game_Phase phase, PieceColour colour);
         static int Get_Piece_Value(PieceType piece, Game_Phase phase);
+        static int Evaluate_Piece_Safety(const Board& board, PieceColour colour);
         static int Square_Control_Value(int square, Game_Phase phase, Board& board);
 
         static int Debug_Evaluate_Position(Board& board, PieceColour colour, Game_Phase phase);

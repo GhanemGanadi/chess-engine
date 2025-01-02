@@ -19,7 +19,6 @@ namespace Engine{
         const PieceColour enemyColour = colour == WHITE ? BLACK : WHITE;
         int score = 0;
         int numberOfAttackers = 0;
-        const int multiplier = colour == WHITE ? 1 : -1;
 
         for (const PieceType piece : {KNIGHT, BISHOP, ROOK, QUEEN}) {
 
@@ -37,12 +36,36 @@ namespace Engine{
 
         }
         score = score * (NO_OF_ATTACKERS_MULTIPLIER[numberOfAttackers]) / 100;
-        return -(score * multiplier);
+        return -score;
     }
 
-    int King_Evaluation::Evaluate_Castling_Status(const Board &board, PieceColour colour) {
+    int King_Evaluation::Evaluate_Castling_Status(const Board &board, const PieceColour colour) {
+        if (board.moveHistory.size() < 16) {
+            return 0;
+        }
+
+        if (colour == WHITE) {
+            if (board.castlingRights.whiteKingSideRookMoves >= 9999 ||
+                board.castlingRights.whiteQueenSideRookMoves >= 9999) {
+                return CASTLED_BONUS;
+            }
+        }
+        if (colour == BLACK) {
+            if (board.castlingRights.blackKingSideRookMoves >= 9999 ||
+                board.castlingRights.blackQueenSideRookMoves >= 9999) {
+                return CASTLED_BONUS;
+            }
+        }
+        return UNCASTLED_BONUS * ((board.moveHistory.size() - 16)/2);
     }
 
+    int King_Evaluation::Complete_King_Evaluation(const Board &board, const PieceColour colour) {
+        int score = 0;
+        score += Evaluate_Castling_Status(board, colour);
+        score += Evaluate_King_Attack_Zone(board, colour);
+
+        return score;
+    }
 
 
 }
