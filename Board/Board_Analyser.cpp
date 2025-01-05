@@ -155,6 +155,7 @@ namespace Board_Analyser {
         move.Set_Castling(true);
         move.Set_King_Side_Castle(isKingSide);
         board.moveHistory.push_back(move);
+        board.castlingRightsHistory.push_back(board.castlingRights);
         return true;
     }
 
@@ -227,9 +228,6 @@ namespace Board_Analyser {
 
     void Promote_Pawn(Move& move, const PieceType promotionPiece, Board& board) {
 
-        const U64 enemyBB = move.Get_Colour() == WHITE ? board.Get_Black_Pieces() : board.Get_White_Pieces();
-        // if (enemyBB & (1ULL << move.Get_To())){ Handle_Captures(move, board); }
-
         U64 newPieceBitboard = board.Get_Piece_Bitboard(promotionPiece, move.Get_Colour());
         newPieceBitboard = Set_Bit(newPieceBitboard, move.Get_To());
         Set_Piece_Bitboard(board, promotionPiece, move.Get_Colour(), newPieceBitboard);
@@ -243,6 +241,9 @@ namespace Board_Analyser {
     }
 
     void Move_Piece(const Move& move, Board& board) {
+        const U64 fromBB = 1ULL << move.Get_From();
+        const U64 toBit = 1ULL << move.Get_To();
+
         PieceType piece = move.Get_Piece_Type();
         if (move.Get_Promotion_Piece() != NO_PIECE){ piece = move.Get_Promotion_Piece(); }
 
@@ -252,35 +253,34 @@ namespace Board_Analyser {
         Set_Piece_Bitboard(board, piece, move.Get_Colour(), pieceBitboard);
 
         if (piece == ROOK) {
-            if (move.Get_Colour() == WHITE) {
-                if (move.Get_From() == a1) {
-                    board.Increment_White_Queen_Side_Rook_Moves();
-                }
-                else if (move.Get_From() == h1) {
-                    board.Increment_White_King_Side_Rook_Moves();
-                }
+            if (fromBB & board.whiteKingSideRook) {
+                board.whiteKingSideRook = toBit;
+                board.Increment_White_King_Side_Rook_Moves();
             }
-            else {
-                if (move.Get_From() == a8) {
-                    board.Increment_Black_Queen_Side_Rook_Moves();
-                }
-                else if (move.Get_From() == h8) {
-                    board.Increment_Black_King_Side_Rook_Moves();
-
-                }
+            else if (fromBB & board.whiteQueenSideRook) {
+                board.whiteQueenSideRook = toBit;
+                board.Increment_White_Queen_Side_Rook_Moves();
             }
+            else if (fromBB & board.blackKingSideRook) {
+                board.blackKingSideRook = toBit;
+                board.Increment_Black_King_Side_Rook_Moves();
+            }
+            else if (fromBB & board.blackQueenSideRook) {
+                board.blackQueenSideRook = toBit;
+                board.Increment_Black_Queen_Side_Rook_Moves();
+            }
+            return;
         }
-        else if (piece == KING) {
+
+        if (piece == KING) {
             if (move.Get_Colour() == WHITE) {
                 board.Increment_White_King_Side_Rook_Moves();
                 board.Increment_White_Queen_Side_Rook_Moves();
+                return;
             }
-            else {
-                board.Increment_Black_King_Side_Rook_Moves();
-                board.Increment_Black_Queen_Side_Rook_Moves();
-            }
+            board.Increment_Black_King_Side_Rook_Moves();
+            board.Increment_Black_Queen_Side_Rook_Moves();
         }
-
     }
 
     bool Can_Promote(const Move& move) {
@@ -411,63 +411,10 @@ namespace Board_Analyser {
 
         Update_Half_Clock(move, board);
         board.moveHistory.push_back(move);
+        board.castlingRightsHistory.push_back(board.castlingRights);
         board.currentTurn = board.currentTurn == WHITE ? BLACK : WHITE;
         return true;
     }
-
-    // not used yet
-    bool Is_Insufficient_Material(const Board& board) {
-            const int whitePawnCount = Count_Bits(board.Get_White_Pawn());
-            const int whiteKnightCount = Count_Bits(board.Get_White_Knight());
-            const int whiteBishopCount = Count_Bits(board.Get_White_Bishop());
-            const int whiteRookCount = Count_Bits(board.Get_White_Rook());
-            const int whiteQueenCount = Count_Bits(board.Get_White_Queen());
-
-            const int blackPawnCount = Count_Bits(board.Get_Black_Pawn());
-            const int blackKnightCount = Count_Bits(board.Get_Black_Knight());
-            const int blackBishopCount = Count_Bits(board.Get_Black_Bishop());
-            const int blackRookCount = Count_Bits(board.Get_Black_Rook());
-            const int blackQueenCount = Count_Bits(board.Get_Black_Queen());
-
-            if (whitePawnCount > 0 || blackPawnCount > 0 ||
-                whiteRookCount > 0 || blackRookCount > 0 ||
-                whiteQueenCount > 0 || blackQueenCount > 0) {
-                return false;
-            }
-
-            if (whiteBishopCount == 0 && whiteKnightCount == 0 &&
-                blackBishopCount == 0 && blackKnightCount == 0) {
-                return true;
-            }
-
-            if ((whiteBishopCount == 0 && whiteKnightCount == 1 &&
-                 blackBishopCount == 0 && blackKnightCount == 0) ||
-                (whiteBishopCount == 0 && whiteKnightCount == 0 &&
-                 blackBishopCount == 0 && blackKnightCount == 1)) {
-                return true;
-            }
-
-            if ((whiteBishopCount == 1 && whiteKnightCount == 0 &&
-                 blackBishopCount == 0 && blackKnightCount == 0) ||
-                (whiteBishopCount == 0 && whiteKnightCount == 0 &&
-                 blackBishopCount == 1 && blackKnightCount == 0)) {
-                return true;
-            }
-
-            if (whiteBishopCount == 1 && whiteKnightCount == 0 &&
-                blackBishopCount == 1 && blackKnightCount == 0) {
-                const U64 whiteBishop = board.Get_White_Bishop();
-                const U64 blackBishop = board.Get_Black_Bishop();
-
-                const bool whiteSquare = (Get_LS1B_Index(whiteBishop) + (Get_LS1B_Index(whiteBishop) / 8)) % 2 == 0;
-                const bool blackSquare = (Get_LS1B_Index(blackBishop) + (Get_LS1B_Index(blackBishop) / 8)) % 2 == 0;
-
-                if (whiteSquare == blackSquare) {
-                    return true;
-                }
-            }
-            return false;
-        }
 
     void Update_Half_Clock(const Move &move, Board &board) {
         if(move.Get_Piece_Type() == PAWN || move.Is_Capture()){ board.Set_Reset_Half_Clock(); }

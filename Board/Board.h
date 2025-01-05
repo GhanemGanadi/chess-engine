@@ -19,8 +19,9 @@ class Board {
     std::array<U64,6> whitePieceArray;
     U64 whitePawn = 0ULL, whiteKnight = 0ULL, whiteBishop = 0ULL, whiteRook = 0ULL,
     whiteQueen = 0ULL, whiteKing = 0ULL;
-    U64 blackPawn = 0ULL, blackKnight = 0ULL, blackBishop = 0ULL,
-    blackRook = 0ULL, blackQueen = 0ULL, blackKing = 0ULL;
+    U64 blackPawn = 0ULL, blackKnight = 0ULL, blackBishop = 0ULL, blackRook = 0ULL,
+    blackQueen = 0ULL, blackKing = 0ULL;
+
 
     U64 whitePieces = 0ULL;
     U64 blackPieces = 0ULL;
@@ -35,6 +36,12 @@ class Board {
     Game_State boardGameState = Game_State::ACTIVE;
 
 public:
+
+    U64 whiteKingSideRook = 0ULL;
+    U64 whiteQueenSideRook = 0ULL;
+    U64 blackKingSideRook = 0ULL;
+    U64 blackQueenSideRook = 0ULL;
+
     Board() {
         Update_Combined_Bitboards();
         blackPieceArray = {blackPawn, blackKnight, blackBishop, blackRook, blackQueen, blackKing};
@@ -48,6 +55,7 @@ public:
     } castlingRights;
 
     std::vector<Move> moveHistory;
+    std::vector<CastlingRights> castlingRightsHistory;
     PieceColour currentTurn = WHITE;
     int Half_Clock = 0;
 
@@ -69,35 +77,13 @@ public:
 
         Move previousMove = moveHistory.back();
         moveHistory.pop_back();
+        castlingRights = castlingRightsHistory.back();
+        castlingRightsHistory.pop_back();
 
         if(previousMove.Is_Castling()) {
             Reverse_Castle(previousMove);
             if(!pseudoLegal) {Set_Decrement_Half_Clock();}
             return;
-        }
-        if (previousMove.Get_Piece_Type() == ROOK) {
-            if (previousMove.Get_From() == a1) {
-                Decrement_White_Queen_Side_Rook_Moves();
-            }
-            else if (previousMove.Get_From() == h1 && previousMove.Get_Colour() == WHITE) {
-                Decrement_White_King_Side_Rook_Moves();
-            }
-            else if (previousMove.Get_From() == a8 && previousMove.Get_Colour() == BLACK) {
-                Decrement_Black_Queen_Side_Rook_Moves();
-            }
-            else if (previousMove.Get_From() == h8 && previousMove.Get_Colour() == BLACK) {
-                Decrement_Black_King_Side_Rook_Moves();
-            }
-        }
-        else if (previousMove.Get_Piece_Type() == KING) {
-            if (previousMove.Get_Colour() == WHITE) {
-                Decrement_White_King_Side_Rook_Moves();
-                Decrement_White_Queen_Side_Rook_Moves();
-            }
-            else {
-                Decrement_Black_King_Side_Rook_Moves();
-                Decrement_Black_Queen_Side_Rook_Moves();
-            }
         }
 
         Reverse_Promotion(previousMove);
@@ -127,15 +113,6 @@ public:
 
         rookBB = Remove_Bit(rookBB, squareToRemove);
         rookBB = Set_Bit(rookBB, squareToRecover);
-
-        if(colour == WHITE) {
-            castlingRights.whiteKingSideRookMoves = 0;
-            castlingRights.whiteQueenSideRookMoves = 0;
-        }
-        else {
-            castlingRights.blackKingSideRookMoves = 0;
-            castlingRights.blackQueenSideRookMoves = 0;
-        }
 
         Set_Piece_Bitboard(KING, colour, kingBB);
         Set_Piece_Bitboard(ROOK, colour, rookBB);
@@ -230,7 +207,7 @@ public:
     }
 
     void Initialise_From_Fen(const std::string& fen) {
-        // Initialize white pieces
+
         whitePawn = Parse_Fen(fen, true, PAWN);
         whiteKnight = Parse_Fen(fen, true, KNIGHT);
         whiteBishop = Parse_Fen(fen, true, BISHOP);
@@ -238,7 +215,6 @@ public:
         whiteQueen = Parse_Fen(fen, true, QUEEN);
         whiteKing = Parse_Fen(fen, true, KING);
 
-        // Initialize black pieces
         blackPawn = Parse_Fen(fen, false, PAWN);
         blackKnight = Parse_Fen(fen, false, KNIGHT);
         blackBishop = Parse_Fen(fen, false, BISHOP);
@@ -251,29 +227,38 @@ public:
         char turn = fen[fenPos + 1];
         currentTurn = (turn == 'w') ? WHITE : BLACK;
 
-        // Find and parse castling rights
+
         size_t pos = fen.find(' ');
-        pos = fen.find(' ', pos + 1);  // Skip to castling section
+        pos = fen.find(' ', pos + 1);
         std::string castling = fen.substr(pos + 1, fen.find(' ', pos + 1) - pos - 1);
 
-        // Reset castling rights
         castlingRights.whiteKingSideRookMoves = 9999;
         castlingRights.whiteQueenSideRookMoves = 9999;
         castlingRights.blackKingSideRookMoves = 9999;
         castlingRights.blackQueenSideRookMoves = 9999;
 
-        // Set castling rights based on FEN
         for(char c : castling) {
             switch(c) {
-                case 'K': castlingRights.whiteKingSideRookMoves = 0; break;
-                case 'Q': castlingRights.whiteQueenSideRookMoves = 0; break;
-                case 'k': castlingRights.blackKingSideRookMoves = 0; break;
-                case 'q': castlingRights.blackQueenSideRookMoves = 0; break;
+                case 'K':
+                    castlingRights.whiteKingSideRookMoves = 0;
+                    whiteKingSideRook = 1ULL << h1;
+
+                break;
+                case 'Q':
+                    castlingRights.whiteQueenSideRookMoves = 0;
+                    whiteQueenSideRook = 1ULL << a1;
+                break;
+                case 'k':
+                    castlingRights.blackKingSideRookMoves = 0;
+                    blackKingSideRook = 1ULL << h8;
+                break;
+                case 'q':
+                    castlingRights.blackQueenSideRookMoves = 0;
+                    blackQueenSideRook = 1ULL << a8;
+                break;
             }
         }
 
-        // Update arrays with new values
-        //enum PieceType {PAWN, ROOK, KNIGHT, BISHOP, QUEEN, KING, NO_PIECE};
         whitePieceArray = {whitePawn, whiteKnight, whiteBishop, whiteRook, whiteQueen, whiteKing};
         blackPieceArray = {blackPawn, blackKnight, blackBishop,blackRook, blackQueen, blackKing};
 

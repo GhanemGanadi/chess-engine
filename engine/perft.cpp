@@ -61,7 +61,7 @@ void Perft::Perft_Divide(Board& board, const int depth, const PieceColour side) 
     for (Move& move : allMoves) {
 
         if (Board_Analyser::Make_Move(move, true, board)) {
-            int nodes = Run_Perft(board, depth - 1, (side == WHITE ? BLACK : WHITE));
+            int nodes = Run_Perft(board, depth - 1, board.currentTurn);
             std::cout << Square_To_String(move.Get_From()) << Square_To_String(move.Get_To());
 
             if (move.Is_Capture()) std::cout << " capture";

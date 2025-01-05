@@ -140,6 +140,7 @@ U64 MoveGeneration::Filter_Legal_Moves(U64 moves, const int square, const PieceC
         if (pieceType == PAWN){ Board_Analyser::Handle_En_Passant(tempMove, board); }
         Board_Analyser::Move_Piece(tempMove, board);
         board.moveHistory.push_back(tempMove);
+        board.castlingRightsHistory.push_back(board.castlingRights);
 
         if(pieceType == KING) {
             kingBB = 1ULL << moveSquare;
@@ -240,23 +241,23 @@ std::vector<Move> MoveGeneration::Generate_All_Moves(const PieceColour colour, B
 
                 if (piece == PAWN) {
                     if (Board_Analyser::Can_Promote(tempMove)) {
+
                         for (const PieceType differentPieces : {KNIGHT, BISHOP, ROOK, QUEEN}) {
                             Move promotionMove = tempMove;
                             promotionMove.Set_Promotion_Piece(differentPieces);
                             Board_Analyser::Set_Move_Flags(promotionMove, board);
-                            tempBoard = board;
-                            // board.Undo_Move(true);
-                            if (Board_Analyser::Make_Move(promotionMove, true, tempBoard)) {
+
+                            if (Board_Analyser::Make_Move(promotionMove, true, board)) {
                                 allMoves.push_back(promotionMove);
+                                board.Undo_Move(true);
                             }
                         }
                         continue;
                     }
                 }
 
-                tempBoard = board;
-                // board.Undo_Move(true);
-                if (Board_Analyser::Make_Move(tempMove, true, tempBoard)) {
+                board.Undo_Move(true);
+                if (Board_Analyser::Make_Move(tempMove, true, board)) {
                     Board_Analyser::Set_Move_Flags(tempMove, board);
                     allMoves.push_back(tempMove);
                 }
@@ -323,7 +324,8 @@ U64 MoveGeneration::Get_Piece_Attacks(const PieceType piece, const int square, c
             return (pawnMoves & ~occupancy) |
                 (Get_Pawn_Attacks(square, colour) & enemyPieces) |
                 Generate_Pawn_En_Passant(square, colour, board);
-        }case KNIGHT:
+        }
+        case KNIGHT:
             return Get_Knight_Moves(square);
         case BISHOP:
             return Tables::Get_Bishop_Moves(square, occupancy);
@@ -348,7 +350,6 @@ void MoveGeneration::Initialise_Lookup_Tables() {
         knightMoves[square] = Generate_Knight_Moves(square);
         kingMoves[square] = Generate_King_Moves(square);
 
-        // Initialize pawn moves and attacks for both colors
         pawnMoves[0][square] = Generate_Pawn_Moves(square, WHITE);
         pawnMoves[1][square] = Generate_Pawn_Moves(square, BLACK);
         pawnAttacks[0][square] = Generate_Pawn_Attacks(square, WHITE);
