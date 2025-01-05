@@ -20,17 +20,6 @@ void Debug_Perft_State(const Board& board, const std::string& message) {
 
     if (!isRelevant) return;  // Skip logging if not relevant to h1h7
 
-    std::cout << "\n=== " << message << " ===\n";
-
-    // Print castling rights
-    std::cout << "Castling Rights:\n"
-              << "White Kingside:  " << (board.Has_White_King_Side_Castling_Rights() ? "Yes" : "No") << "\n"
-              << "White Queenside: " << (board.Has_White_Queen_Side_Castling_Rights() ? "Yes" : "No") << "\n"
-              << "Black Kingside:  " << (board.Has_Black_King_Side_Castling_Rights() ? "Yes" : "No") << "\n"
-              << "Black Queenside: " << (board.Has_Black_Queen_Side_Castling_Rights() ? "Yes" : "No") << "\n";
-
-    // Print move history
-    std::cout << "\nMove History (" << board.moveHistory.size() << " moves):\n";
     for(const auto& move : board.moveHistory) {
         std::cout << Square_To_String(move.Get_From()) << Square_To_String(move.Get_To());
         if(move.Is_Capture()) std::cout << " (capture)";
@@ -57,10 +46,8 @@ U64 Perft::Run_Perft(Board& board, const int depth, const PieceColour side) {
 
     for (Move& move : allMoves) {
         if (Board_Analyser::Make_Move(move, true, board)) {
-            // Debug_Perft_State(board, "After Make_Move - Depth " + std::to_string(depth));
             nodes += Run_Perft(board, depth - 1, (side == WHITE ? BLACK : WHITE));
             board.Undo_Move(false);
-            // Debug_Perft_State(board, "After Undo_Move - Depth " + std::to_string(depth));
         }
     }
 
@@ -72,12 +59,6 @@ void Perft::Perft_Divide(Board& board, const int depth, const PieceColour side) 
     int totalNodes = 0;
 
     for (Move& move : allMoves) {
-        // Special detailed logging for h1h7
-        // if (move.Get_From() == h1 && move.Get_To() == h7 &&
-            // move.Get_Piece_Type() == ROOK && move.Get_Colour() == WHITE) {
-            // std::cout << "\n=== Starting analysis of h1h7 ===\n";
-            // Debug_Perft_State(board, "Before h1h7");
-        // }
 
         if (Board_Analyser::Make_Move(move, true, board)) {
             int nodes = Run_Perft(board, depth - 1, (side == WHITE ? BLACK : WHITE));
@@ -95,12 +76,6 @@ void Perft::Perft_Divide(Board& board, const int depth, const PieceColour side) 
 
             board.Undo_Move(false);
 
-            // Special detailed logging for h1h7
-            // if (move.Get_From() == h1 && move.Get_To() == h7 &&
-                // move.Get_Piece_Type() == ROOK && move.Get_Colour() == WHITE) {
-                // Debug_Perft_State(board, "After undoing h1h7");
-                // std::cout << "=== Finished analysis of h1h7 ===\n\n";
-            // }
         }
     }
 
@@ -113,7 +88,7 @@ PerftStats Perft::Run_Perft_Stats(Board& board, const int depth, const PieceColo
     PerftStats stats;
 
     if (depth == 0) {
-        stats.nodes = 1;  // Count this position as one node
+        stats.nodes = 1;
         return stats;
     }
 
@@ -122,11 +97,9 @@ PerftStats Perft::Run_Perft_Stats(Board& board, const int depth, const PieceColo
 
     for (Move& singleMove : allMoves) {
         if (Board_Analyser::Make_Move(singleMove, true, board)) {
-            // For non-leaf nodes, accumulate stats from deeper levels
             PerftStats subStats = Run_Perft_Stats(board, depth - 1, enemyColour);
             stats.Add(subStats);
 
-            // Additional stats only counted at depth == 1
             if (depth == 1) {
                 if (singleMove.Is_Capture()) stats.captures++;
                 if (singleMove.Is_En_Passant()) stats.enPassant++;

@@ -59,8 +59,9 @@ public:
                     std::cout << "No moves to undo!\n";
                     continue;
                 }
-                board.Undo_Move(false);
-                currentTurn = currentTurn == WHITE ? BLACK : WHITE;
+                board.Undo_Move(true);
+                board.Undo_Move(true);
+                // currentTurn = currentTurn == WHITE ? BLACK : WHITE;
                 std::cout << "Move undone\n";
                 board.Print_Detailed_Board();
                 continue;

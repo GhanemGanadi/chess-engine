@@ -9,7 +9,7 @@
 #include "Evaluation.h"
 #include "Phases.h"
 
-// std::ofstream file("../core/output.txt");
+std::ofstream file("../core/output.txt");
 namespace Engine {
     MoveGeneration MoveGeneration;
     OpeningBook OpeningBook;
@@ -48,9 +48,9 @@ namespace Engine {
 
         for (Move& move : allMoves) {
             Board_Analyser::Make_Move(move, true, board);
-            // file << " DEPTH: " << depth << std::endl;
-            // file << Square_To_String(move.Get_To()) << " " << Square_To_String(move.Get_From()) << " "
-            // << Get_Piece_Name(move.Get_Piece_Type()) << std::endl;
+            file << " DEPTH: " << depth << std::endl;
+            file << Square_To_String(move.Get_To()) << " " << Square_To_String(move.Get_From()) << " "
+            << Get_Piece_Name(move.Get_Piece_Type()) << std::endl;
             const int score = Minimax(board, depth -  1, -INFINITY_SCORE, INFINITY_SCORE,
                                board.currentTurn);
 
@@ -62,7 +62,7 @@ namespace Engine {
             }
         }
 
-        // file.close();
+        file.close();
         return bestMove;
     }
 
@@ -85,13 +85,13 @@ namespace Engine {
     }
 
     int Search::Minimax(Board &board, const int depth, int alpha, int beta, const PieceColour colour) {
-        // file << " DEPTH: " << depth << std::endl;
+        file << " DEPTH: " << depth << std::endl;
         if (depth == 0) {
             const Game_Phase phase = Phase::Phase_Detection(board);
             const int score = Evaluator::Evaluate_Complete_Position(board, phase, WHITE) -
                         Evaluator::Evaluate_Complete_Position(board, phase, BLACK);
 
-            // file << " Score: " << score << std::endl;
+            file << " Score: " << score << std::endl;
             return score;
         }
 
@@ -101,13 +101,13 @@ namespace Engine {
         if (allMoves.empty()) {
             const int score = MATE_SCORE * (MAX_DEPTH - depth);
             return colour == WHITE ? score : -score;
-        }
+    }
 
         int bestScore = colour == WHITE ? -INFINITY_SCORE : INFINITY_SCORE;
 
         for (Move& move : allMoves) {
-            // file << Square_To_String(move.Get_To()) << " " << Square_To_String(move.Get_From()) << " "
-                // << Get_Piece_Name(move.Get_Piece_Type()) << std::endl;
+            file << Square_To_String(move.Get_To()) << " " << Square_To_String(move.Get_From()) << " "
+                << Get_Piece_Name(move.Get_Piece_Type()) << std::endl;
             Board_Analyser::Make_Move(move, true, board);
             int score = Minimax(board, depth - 1, alpha, beta, board.currentTurn);
 
@@ -119,8 +119,10 @@ namespace Engine {
             else { beta = std::min(beta, score); }
 
             if (beta <= alpha) {
+                // std::cout << "PRUNED " << std::endl;
+                // board.Print_Move_Details(move);
                 // break;
-                // file << "PRUNED" << std::endl;
+                file << "PRUNED" << std::endl;
             }
         }
         return bestScore;

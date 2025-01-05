@@ -245,6 +245,7 @@ std::vector<Move> MoveGeneration::Generate_All_Moves(const PieceColour colour, B
                             promotionMove.Set_Promotion_Piece(differentPieces);
                             Board_Analyser::Set_Move_Flags(promotionMove, board);
                             tempBoard = board;
+                            // board.Undo_Move(true);
                             if (Board_Analyser::Make_Move(promotionMove, true, tempBoard)) {
                                 allMoves.push_back(promotionMove);
                             }
@@ -254,6 +255,7 @@ std::vector<Move> MoveGeneration::Generate_All_Moves(const PieceColour colour, B
                 }
 
                 tempBoard = board;
+                // board.Undo_Move(true);
                 if (Board_Analyser::Make_Move(tempMove, true, tempBoard)) {
                     Board_Analyser::Set_Move_Flags(tempMove, board);
                     allMoves.push_back(tempMove);
