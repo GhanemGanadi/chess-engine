@@ -17,6 +17,7 @@ config.h
 core/test.txt
 core/opening-book.txt
 masters.txt
+output.txt
 
 # Compiled files
 *.o

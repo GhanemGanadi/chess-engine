@@ -8,7 +8,7 @@ Board MoveGeneration::board;
 
 
 U64 MoveGeneration::Generate_Knight_Moves(const int square) {
-    U64 knight = 1ULL << square;
+    const U64 knight = 1ULL << square;
     return (knight << 6  & ~GH_FILE) | (knight >> 6  & ~AB_FILE) |
            (knight << 10 & ~AB_FILE) | (knight >> 10 & ~GH_FILE) |
            (knight << 15 & ~H_FILE) | (knight >> 15 & ~A_FILE) |
@@ -16,7 +16,7 @@ U64 MoveGeneration::Generate_Knight_Moves(const int square) {
 }
 
 U64 MoveGeneration::Generate_King_Moves(const int square) {
-    U64 king = 1ULL << square;
+    const U64 king = 1ULL << square;
     return (king << 8) | (king >> 8) |
            (king << 1 & ~A_FILE) | (king >> 1 & ~H_FILE) |
            (king << 7 & ~H_FILE) | (king >> 7 & ~A_FILE) |
@@ -28,12 +28,10 @@ U64 MoveGeneration::Generate_Pawn_Moves(const int square, const PieceColour colo
     if((square + direction) > 63 || (square + direction) < 0) return 0ULL;
     U64 pawn = 1ULL << (square + direction);
 
-    bool onStartRank = colour == WHITE ? (square >= 48 && square <= 55) :
+    const bool onStartRank = colour == WHITE ? (square >= 48 && square <= 55) :
                                        (square >= 8 && square <= 15);
 
-    if (onStartRank) {
-        pawn |= 1ULL << (square + (2 * direction));
-    }
+    if (onStartRank) { pawn |= 1ULL << (square + (2 * direction)); }
 
     return pawn;
 }
@@ -79,7 +77,7 @@ U64 MoveGeneration::Generate_Pawn_En_Passant(const int square, const PieceColour
 }
 
 [[nodiscard]] U64 MoveGeneration::Get_Pseudo_Legal_Moves(const int square, const PieceColour colour, const PieceType pieceType,
-    const Board& board) const {
+    const Board& board) {
 
     const U64 friendlyPieces = colour == WHITE ? board.Get_White_Pieces() : board.Get_Black_Pieces();
     const U64 enemyPieces = colour == WHITE ? board.Get_Black_Pieces() : board.Get_White_Pieces();
@@ -222,7 +220,6 @@ Move MoveGeneration::Detect_Capture(Move& move, const Board& board) {
 
 std::vector<Move> MoveGeneration::Generate_All_Moves(const PieceColour colour, Board& board) const {
     std::vector<Move> allMoves;
-    Board tempBoard = board;
 
     for(const PieceType piece : {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING}) {
         U64 pieceBB = board.Get_Piece_Bitboard(piece, colour);

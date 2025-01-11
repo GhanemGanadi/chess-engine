@@ -95,8 +95,17 @@ public:
         U64 pieceBB = Get_Piece_Bitboard(piece, pieceColour);
         pieceBB = Remove_Bit(pieceBB, previousMove.Get_To());
         pieceBB = Set_Bit(pieceBB, previousMove.Get_From());
-        Set_Piece_Bitboard(piece, pieceColour, pieceBB);
+        if (piece == ROOK) {
+            const U64 fromBB = 1ULL << previousMove.Get_From();
+            const U64 toBB = 1ULL << previousMove.Get_To();
 
+            if (toBB & whiteKingSideRook) { whiteKingSideRook = fromBB; }
+            else if (toBB & whiteQueenSideRook) { whiteQueenSideRook = fromBB; }
+            else if (toBB & blackKingSideRook) { blackKingSideRook = fromBB;}
+            else if (toBB & blackQueenSideRook) { blackQueenSideRook = fromBB; }
+        }
+
+        Set_Piece_Bitboard(piece, pieceColour, pieceBB);
 
         if(!pseudoLegal) {Set_Decrement_Half_Clock();}
    }
@@ -113,6 +122,7 @@ public:
 
         rookBB = Remove_Bit(rookBB, squareToRemove);
         rookBB = Set_Bit(rookBB, squareToRecover);
+
 
         Set_Piece_Bitboard(KING, colour, kingBB);
         Set_Piece_Bitboard(ROOK, colour, rookBB);
