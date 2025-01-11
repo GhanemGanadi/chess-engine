@@ -17,6 +17,8 @@ enum class Game_State {
 class Board {
     std::array<U64,6> blackPieceArray;
     std::array<U64,6> whitePieceArray;
+    std::array<U64, 4> rookTracking;     // black queen, black king, white queen, white king
+
     U64 whitePawn = 0ULL, whiteKnight = 0ULL, whiteBishop = 0ULL, whiteRook = 0ULL,
     whiteQueen = 0ULL, whiteKing = 0ULL;
     U64 blackPawn = 0ULL, blackKnight = 0ULL, blackBishop = 0ULL, blackRook = 0ULL,
@@ -36,12 +38,6 @@ class Board {
     Game_State boardGameState = Game_State::ACTIVE;
 
 public:
-
-    U64 whiteKingSideRook = 0ULL;
-    U64 whiteQueenSideRook = 0ULL;
-    U64 blackKingSideRook = 0ULL;
-    U64 blackQueenSideRook = 0ULL;
-
     Board() {
         Update_Combined_Bitboards();
         blackPieceArray = {blackPawn, blackKnight, blackBishop, blackRook, blackQueen, blackKing};
@@ -55,11 +51,10 @@ public:
     } castlingRights;
 
     std::vector<Move> moveHistory;
-    std::vector<CastlingRights> castlingRightsHistory;
     PieceColour currentTurn = WHITE;
     int Half_Clock = 0;
 
-    void Print_Move_Details(const Move& move) {
+    static void Print_Move_Details(const Move& move) {
         std::cout << "\nMove Details:\n"
                   << "From: " << Square_To_String(move.Get_From())
                   << " To: " << Square_To_String(move.Get_To())
@@ -77,8 +72,6 @@ public:
 
         Move previousMove = moveHistory.back();
         moveHistory.pop_back();
-        castlingRights = castlingRightsHistory.back();
-        castlingRightsHistory.pop_back();
 
         if(previousMove.Is_Castling()) {
             Reverse_Castle(previousMove);
@@ -89,21 +82,42 @@ public:
         Reverse_Promotion(previousMove);
         Reverse_Capture(previousMove);
 
+
+        if (previousMove.Get_Moved_Rook() != NOT_ROOK) {
+            switch (previousMove.Get_Moved_Rook()) {
+                case WHITE_KING_SIDE:
+                    Decrement_White_King_Side_Rook_Moves();
+                break;
+                case WHITE_QUEEN_SIDE:
+                    Decrement_White_Queen_Side_Rook_Moves();
+                break;
+                case BLACK_KING_SIDE:
+                    Decrement_Black_King_Side_Rook_Moves();
+                break;
+                case BLACK_QUEEN_SIDE:
+                    Decrement_Black_Queen_Side_Rook_Moves();
+                break;
+                default:
+                    break;
+            }
+        }
+        if (previousMove.Get_Piece_Type() == KING) {
+            if (previousMove.Get_Colour() == WHITE) {
+                Decrement_White_King_Side_Rook_Moves();
+                Decrement_White_Queen_Side_Rook_Moves();
+            }
+            else {
+                Decrement_Black_King_Side_Rook_Moves();
+                Decrement_Black_Queen_Side_Rook_Moves();
+            }
+        }
+
         const PieceColour pieceColour = previousMove.Get_Colour();
         const PieceType piece = previousMove.Get_Piece_Type();
 
         U64 pieceBB = Get_Piece_Bitboard(piece, pieceColour);
         pieceBB = Remove_Bit(pieceBB, previousMove.Get_To());
         pieceBB = Set_Bit(pieceBB, previousMove.Get_From());
-        if (piece == ROOK) {
-            const U64 fromBB = 1ULL << previousMove.Get_From();
-            const U64 toBB = 1ULL << previousMove.Get_To();
-
-            if (toBB & whiteKingSideRook) { whiteKingSideRook = fromBB; }
-            else if (toBB & whiteQueenSideRook) { whiteQueenSideRook = fromBB; }
-            else if (toBB & blackKingSideRook) { blackKingSideRook = fromBB;}
-            else if (toBB & blackQueenSideRook) { blackQueenSideRook = fromBB; }
-        }
 
         Set_Piece_Bitboard(piece, pieceColour, pieceBB);
 
@@ -123,9 +137,17 @@ public:
         rookBB = Remove_Bit(rookBB, squareToRemove);
         rookBB = Set_Bit(rookBB, squareToRecover);
 
-
         Set_Piece_Bitboard(KING, colour, kingBB);
         Set_Piece_Bitboard(ROOK, colour, rookBB);
+
+        if (colour == WHITE) {
+            castlingRights.whiteKingSideRookMoves = 0;
+            castlingRights.whiteQueenSideRookMoves = 0;
+        }
+        else {
+            castlingRights.blackKingSideRookMoves = 0;
+            castlingRights.blackQueenSideRookMoves = 0;
+        }
     }
 
     void Reverse_Promotion(const Move& move) {
@@ -251,20 +273,16 @@ public:
             switch(c) {
                 case 'K':
                     castlingRights.whiteKingSideRookMoves = 0;
-                    whiteKingSideRook = 1ULL << h1;
 
                 break;
                 case 'Q':
                     castlingRights.whiteQueenSideRookMoves = 0;
-                    whiteQueenSideRook = 1ULL << a1;
                 break;
                 case 'k':
                     castlingRights.blackKingSideRookMoves = 0;
-                    blackKingSideRook = 1ULL << h8;
                 break;
                 case 'q':
                     castlingRights.blackQueenSideRookMoves = 0;
-                    blackQueenSideRook = 1ULL << a8;
                 break;
             }
         }

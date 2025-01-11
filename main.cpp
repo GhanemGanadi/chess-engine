@@ -11,10 +11,10 @@ int main() {
     Board board;
     OpeningBook book = OpeningBook();
     // std::string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-    std::string fen = "r1n1k2r/p1ppqpb1/b3pnp1/3PN3/1p2P3/2N4Q/PPPBBPPP/R3K2R w KQkq - 0 1";
+    std::string fen = "r1n1k2b/p1ppqp2/b3pnp1/3PN3/1p2P3/2N5/PPPBBPPP/R3K2R w KQq - 0 1";
     board.Initialise_From_Fen(fen);
     Perft perft;
-    perft.Perft_Divide(board, 1, board.currentTurn);
+    perft.Perft_Divide(board, 2, board.currentTurn);
     Game game = Game(fen);
 
     // game.Play_Game();

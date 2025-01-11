@@ -8,12 +8,12 @@ namespace Board_Analyser {
 
     int Is_Square_Attacked(const int square, const PieceColour attackerColour, const Board& board) {
 
-        const U64 pawnAttacks = Moves_Generation.Get_Pawn_Attacks(square, attackerColour == WHITE ? BLACK : WHITE);
+        const U64 pawnAttacks = MoveGeneration::Get_Pawn_Attacks(square, attackerColour == WHITE ? BLACK : WHITE);
         if (pawnAttacks & board.Get_Piece_Bitboard(PAWN, attackerColour)) {
             return Get_Square(pawnAttacks & board.Get_Piece_Bitboard(PAWN, attackerColour));
         }
 
-        U64 knightAttacks = Moves_Generation.Get_Knight_Moves(square);
+        U64 knightAttacks = MoveGeneration::Get_Knight_Moves(square);
         if (knightAttacks & board.Get_Piece_Bitboard(KNIGHT, attackerColour)) {
             return Get_Square(knightAttacks & board.Get_Piece_Bitboard(KNIGHT, attackerColour));
         }
@@ -155,7 +155,6 @@ namespace Board_Analyser {
         move.Set_Castling(true);
         move.Set_King_Side_Castle(isKingSide);
         board.moveHistory.push_back(move);
-        board.castlingRightsHistory.push_back(board.castlingRights);
         return true;
     }
 
@@ -240,10 +239,8 @@ namespace Board_Analyser {
         move.Set_Promotion_Piece(promotionPiece);
     }
 
-    void Move_Piece(const Move& move, Board& board) {
-        const U64 fromBB = 1ULL << move.Get_From();
-        const U64 toBit = 1ULL << move.Get_To();
-
+    void
+    Move_Piece(Move& move, Board& board) {
         PieceType piece = move.Get_Piece_Type();
         if (move.Get_Promotion_Piece() != NO_PIECE){ piece = move.Get_Promotion_Piece(); }
 
@@ -253,21 +250,21 @@ namespace Board_Analyser {
         Set_Piece_Bitboard(board, piece, move.Get_Colour(), pieceBitboard);
 
         if (piece == ROOK) {
-            if (fromBB & board.whiteKingSideRook) {
-                board.whiteKingSideRook = toBit;
-                board.Increment_White_King_Side_Rook_Moves();
-            }
-            else if (fromBB & board.whiteQueenSideRook) {
-                board.whiteQueenSideRook = toBit;
+            if (move.Get_From() == a1 && board.Has_White_Queen_Side_Castling_Rights()) {
+                move.Set_Moved_Rook(WHITE_QUEEN_SIDE);
                 board.Increment_White_Queen_Side_Rook_Moves();
             }
-            else if (fromBB & board.blackKingSideRook) {
-                board.blackKingSideRook = toBit;
-                board.Increment_Black_King_Side_Rook_Moves();
+            else if (move.Get_From() == h1 && board.Has_White_King_Side_Castling_Rights()) {
+                move.Set_Moved_Rook(WHITE_KING_SIDE);
+                board.Increment_White_King_Side_Rook_Moves();
             }
-            else if (fromBB & board.blackQueenSideRook) {
-                board.blackQueenSideRook = toBit;
+            else if (move.Get_From() == a8 && board.Has_Black_Queen_Side_Castling_Rights()) {
+                move.Set_Moved_Rook(BLACK_QUEEN_SIDE);
                 board.Increment_Black_Queen_Side_Rook_Moves();
+            }
+            else if (move.Get_From() == h8 && board.Has_Black_King_Side_Castling_Rights()) {
+                move.Set_Moved_Rook(BLACK_KING_SIDE);
+                board.Increment_Black_King_Side_Rook_Moves();
             }
             return;
         }
@@ -411,7 +408,7 @@ namespace Board_Analyser {
 
         Update_Half_Clock(move, board);
         board.moveHistory.push_back(move);
-        board.castlingRightsHistory.push_back(board.castlingRights);
+
         board.currentTurn = board.currentTurn == WHITE ? BLACK : WHITE;
         return true;
     }

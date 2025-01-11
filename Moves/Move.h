@@ -2,9 +2,11 @@
 #include "../core/Bitboard_Operations.h"
 
 class Board;
+enum RookType { NOT_ROOK, WHITE_KING_SIDE, WHITE_QUEEN_SIDE, BLACK_KING_SIDE, BLACK_QUEEN_SIDE };
 
 struct Move {
 private:
+
     Squares fromSquare;
     Squares toSquare;
     PieceType pieceType;
@@ -16,6 +18,8 @@ private:
     bool isCapture;
     bool isCastling;
     bool isEnPassant;
+    RookType movedRook = NOT_ROOK;
+
 
 public:
     int score = 0;
@@ -44,6 +48,7 @@ public:
     [[nodiscard]] bool Is_Capture() const { return isCapture; }
     [[nodiscard]] bool Is_Castling() const { return isCastling; }
     [[nodiscard]] bool Is_En_Passant() const { return isEnPassant; }
+    [[nodiscard]] RookType Get_Moved_Rook() const { return movedRook; }
 
     // Setters
     void Set_Promotion_Piece(const PieceType piece) { promotionPiece = piece; }
@@ -56,6 +61,7 @@ public:
     void Set_Piece_Type(const PieceType piece) { pieceType = piece; }
     void Set_Captured_Piece(const PieceType piece) { capturedPiece = piece; }
     void Set_King_Side_Castle(const bool castle){ kingSideCastle = castle; }
+    void Set_Moved_Rook(const RookType rook) { movedRook = rook; }
 
 };
 namespace Move_Parsing {

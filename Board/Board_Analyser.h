@@ -22,7 +22,7 @@ namespace Board_Analyser {
 
     void Handle_Captures(Move& move, Board& board);
     bool Make_Move(Move& move, bool moveGeneration, Board& board);
-    void Move_Piece(const Move& move, Board& board);
+    void Move_Piece(Move& move, Board& board);
 
     bool Is_Insufficient_Material(const Board& board);
     bool Is_Light_Square_Bishop(U64 bishopBitboard);

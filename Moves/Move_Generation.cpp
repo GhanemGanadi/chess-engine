@@ -136,9 +136,11 @@ U64 MoveGeneration::Filter_Legal_Moves(U64 moves, const int square, const PieceC
         }
 
         if (pieceType == PAWN){ Board_Analyser::Handle_En_Passant(tempMove, board); }
+
+        // Board_Analyser::Make_Move(tempMove, true, board);
         Board_Analyser::Move_Piece(tempMove, board);
+        Board_Analyser::Set_Move_Flags(tempMove, board);
         board.moveHistory.push_back(tempMove);
-        board.castlingRightsHistory.push_back(board.castlingRights);
 
         if(pieceType == KING) {
             kingBB = 1ULL << moveSquare;
@@ -154,7 +156,7 @@ U64 MoveGeneration::Filter_Legal_Moves(U64 moves, const int square, const PieceC
 }
 
 
-U64 MoveGeneration::Get_Legal_Moves(const int square, const PieceColour colour, const PieceType pieceType, Board &board) const {
+U64 MoveGeneration::Get_Legal_Moves(const int square, const PieceColour colour, const PieceType pieceType, Board &board) {
 
     const U64 pseudoLegalMoves = Get_Pseudo_Legal_Moves(square, colour, pieceType, board);
     return Filter_Legal_Moves(pseudoLegalMoves, square, colour, pieceType, board);
@@ -253,9 +255,9 @@ std::vector<Move> MoveGeneration::Generate_All_Moves(const PieceColour colour, B
                     }
                 }
 
-                board.Undo_Move(true);
                 if (Board_Analyser::Make_Move(tempMove, true, board)) {
-                    Board_Analyser::Set_Move_Flags(tempMove, board);
+                    board.Undo_Move(true);
+                    // Board_Analyser::Set_Move_Flags(tempMove, board);
                     allMoves.push_back(tempMove);
                 }
             }
