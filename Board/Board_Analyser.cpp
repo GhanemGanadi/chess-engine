@@ -4,8 +4,6 @@
 #include "../Moves/Move_Generation.h"
 
 namespace Board_Analyser {
-    auto Moves_Generation = MoveGeneration();
-
     int Is_Square_Attacked(const int square, const PieceColour attackerColour, const Board& board) {
 
         const U64 pawnAttacks = MoveGeneration::Get_Pawn_Attacks(square, attackerColour == WHITE ? BLACK : WHITE);
@@ -96,7 +94,10 @@ namespace Board_Analyser {
          const int attackerSquare = Is_King_In_Check(kingBB, colour, board);
          if (attackerSquare == -1){return false;}
 
-         const U64 legalMoves = Moves_Generation.Get_Legal_Moves(kingSquare, colour, KING, board);
+         const U64 legalMoves = MoveGeneration::Get_Legal_Moves(kingSquare,
+                                                                colour,
+                                                                KING,
+                                                                board);
          if(legalMoves) {return false;}
 
          for (const PieceType piece : {PAWN, KNIGHT, BISHOP, ROOK, QUEEN}) {
@@ -106,7 +107,11 @@ namespace Board_Analyser {
                  int singlePiece = Get_LS1B_Index(pieceBB);
                  pieceBB &= pieceBB - 1;
 
-                 const U64 legalPieceMoves = Moves_Generation.Get_Legal_Moves(singlePiece, colour, piece, board);
+                 const U64 legalPieceMoves = MoveGeneration::Get_Legal_Moves(singlePiece,
+                                                                            colour,
+                                                                            piece,
+                                                                            board);
+
                  if(legalPieceMoves) {return false;}
              }
          }
@@ -157,7 +162,6 @@ namespace Board_Analyser {
         board.moveHistory.push_back(move);
         return true;
     }
-
 
     bool Can_Castle(const Move &move, const Board& board) {
         const PieceColour colour = move.Get_Colour();
@@ -211,7 +215,7 @@ namespace Board_Analyser {
             while(pieceBitboard) {
                 const int pieceSquare = Get_LS1B_Index(pieceBitboard);
 
-                const U64 legalMoves = Moves_Generation.Get_Legal_Moves(pieceSquare,
+                const U64 legalMoves = MoveGeneration::Get_Legal_Moves(pieceSquare,
                                                                         colour,
                                                                         piece,
                                                                         board);
@@ -239,8 +243,8 @@ namespace Board_Analyser {
         move.Set_Promotion_Piece(promotionPiece);
     }
 
-    void
-    Move_Piece(Move& move, Board& board) {
+    void Move_Piece(Move& move, Board& board) {
+        board.currentTurn = board.currentTurn == WHITE ? BLACK : WHITE;
         PieceType piece = move.Get_Piece_Type();
         if (move.Get_Promotion_Piece() != NO_PIECE){ piece = move.Get_Promotion_Piece(); }
 
@@ -270,13 +274,24 @@ namespace Board_Analyser {
         }
 
         if (piece == KING) {
-            if (move.Get_Colour() == WHITE) {
-                board.Increment_White_King_Side_Rook_Moves();
-                board.Increment_White_Queen_Side_Rook_Moves();
-                return;
+            if (move.Get_Piece_Type() == KING && abs(move.Get_To() - move.Get_From()) == 2) {
+                if (move.Get_Colour() == WHITE) {
+                    board.castlingRights.whiteKingSideRookMoves = 9999;
+                    board.castlingRights.whiteQueenSideRookMoves = 9999;
+                    return;
+                }
+                board.castlingRights.blackKingSideRookMoves = 9999;
+                board.castlingRights.blackQueenSideRookMoves = 9999;
             }
-            board.Increment_Black_King_Side_Rook_Moves();
-            board.Increment_Black_Queen_Side_Rook_Moves();
+            else {
+                if (move.Get_Colour() == WHITE) {
+                    board.Increment_White_King_Side_Rook_Moves();
+                    board.Increment_White_Queen_Side_Rook_Moves();
+                    return;
+                }
+                board.Increment_Black_King_Side_Rook_Moves();
+                board.Increment_Black_Queen_Side_Rook_Moves();
+            }
         }
     }
 
@@ -370,10 +385,12 @@ namespace Board_Analyser {
 
         if (!(pieceBB & pieceLocation)){ return false; }
 
-        const U64 pieceLegalMoves = Moves_Generation.Get_Legal_Moves(move.Get_From(), pieceColour, pieceType, board);
+        const U64 pieceLegalMoves = MoveGeneration::Get_Legal_Moves(move.Get_From(),
+                                                                    pieceColour,
+                                                                    pieceType,
+                                                                    board);
 
         if (!(pieceDestination & pieceLegalMoves)){ return false; }
-
 
         if (pieceType == PAWN) {
             Handle_En_Passant(move, board);
@@ -408,8 +425,6 @@ namespace Board_Analyser {
 
         Update_Half_Clock(move, board);
         board.moveHistory.push_back(move);
-
-        board.currentTurn = board.currentTurn == WHITE ? BLACK : WHITE;
         return true;
     }
 

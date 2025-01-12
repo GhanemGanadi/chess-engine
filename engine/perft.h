@@ -34,14 +34,13 @@ struct PerftStats {
 };
 
 class Perft {
-    MoveGeneration moveGen;
 public:
 
     // Basic node counter
-    U64 Run_Perft(Board& board, int depth, PieceColour side);
+    int Run_Perft(Board& board, int depth);
 
     // Detailed move counting
-    void Perft_Divide(Board& board, int depth, PieceColour side);
+    void Perft_Divide(Board& board, int depth);
 
     // Full statistics
     PerftStats Run_Perft_Stats(Board& board, int depth, PieceColour side);

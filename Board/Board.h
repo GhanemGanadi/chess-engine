@@ -68,9 +68,10 @@ public:
     }
 
     void Undo_Move(const bool pseudoLegal) {
-        if(moveHistory.empty()) { return; }
+        if (moveHistory.empty()) { return; }
+        currentTurn = currentTurn == WHITE ? BLACK : WHITE;
 
-        Move previousMove = moveHistory.back();
+        const Move previousMove = moveHistory.back();
         moveHistory.pop_back();
 
         if(previousMove.Is_Castling()) {
@@ -87,16 +88,16 @@ public:
             switch (previousMove.Get_Moved_Rook()) {
                 case WHITE_KING_SIDE:
                     Decrement_White_King_Side_Rook_Moves();
-                break;
+                    break;
                 case WHITE_QUEEN_SIDE:
                     Decrement_White_Queen_Side_Rook_Moves();
-                break;
+                    break;
                 case BLACK_KING_SIDE:
                     Decrement_Black_King_Side_Rook_Moves();
-                break;
+                    break;
                 case BLACK_QUEEN_SIDE:
                     Decrement_Black_Queen_Side_Rook_Moves();
-                break;
+                    break;
                 default:
                     break;
             }
@@ -141,12 +142,12 @@ public:
         Set_Piece_Bitboard(ROOK, colour, rookBB);
 
         if (colour == WHITE) {
-            castlingRights.whiteKingSideRookMoves = 0;
-            castlingRights.whiteQueenSideRookMoves = 0;
+            castlingRights.whiteKingSideRookMoves -= 9999;
+            castlingRights.whiteQueenSideRookMoves -= 9999;
         }
         else {
-            castlingRights.blackKingSideRookMoves = 0;
-            castlingRights.blackQueenSideRookMoves = 0;
+            castlingRights.blackKingSideRookMoves -= 9999;
+            castlingRights.blackQueenSideRookMoves -= 9999;
         }
     }
 
@@ -314,19 +315,19 @@ public:
     [[nodiscard]] U64 Get_Black_Pieces() const { return blackPieces; }
     [[nodiscard]] U64 Get_All_Pieces() const { return allPieces; }
 
-    [[nodiscard]] bool Has_White_King_Side_Castling_Rights() const { return castlingRights.whiteKingSideRookMoves == 0; }
+    [[nodiscard]] bool Has_White_King_Side_Castling_Rights() const { return castlingRights.whiteKingSideRookMoves <= 0; }
     void Increment_White_King_Side_Rook_Moves() { castlingRights.whiteKingSideRookMoves++; }
     void Decrement_White_King_Side_Rook_Moves() { castlingRights.whiteKingSideRookMoves--; }
 
-    [[nodiscard]] bool Has_White_Queen_Side_Castling_Rights() const { return castlingRights.whiteQueenSideRookMoves == 0; }
+    [[nodiscard]] bool Has_White_Queen_Side_Castling_Rights() const { return castlingRights.whiteQueenSideRookMoves <= 0; }
     void Increment_White_Queen_Side_Rook_Moves() { castlingRights.whiteQueenSideRookMoves++; }
     void Decrement_White_Queen_Side_Rook_Moves() { castlingRights.whiteQueenSideRookMoves--; }
 
-    [[nodiscard]] bool Has_Black_King_Side_Castling_Rights() const { return castlingRights.blackKingSideRookMoves == 0; }
+    [[nodiscard]] bool Has_Black_King_Side_Castling_Rights() const { return castlingRights.blackKingSideRookMoves <= 0; }
     void Increment_Black_King_Side_Rook_Moves() { castlingRights.blackKingSideRookMoves++; }
     void Decrement_Black_King_Side_Rook_Moves() { castlingRights.blackKingSideRookMoves--; }
 
-    [[nodiscard]] bool Has_Black_Queen_Side_Castling_Rights() const { return castlingRights.blackQueenSideRookMoves == 0; }
+    [[nodiscard]] bool Has_Black_Queen_Side_Castling_Rights() const { return castlingRights.blackQueenSideRookMoves <= 0; }
     void Increment_Black_Queen_Side_Rook_Moves() { castlingRights.blackQueenSideRookMoves++; }
     void Decrement_Black_Queen_Side_Rook_Moves() { castlingRights.blackQueenSideRookMoves--; }
 

@@ -76,8 +76,8 @@ U64 MoveGeneration::Generate_Pawn_En_Passant(const int square, const PieceColour
     return moves;
 }
 
-[[nodiscard]] U64 MoveGeneration::Get_Pseudo_Legal_Moves(const int square, const PieceColour colour, const PieceType pieceType,
-    const Board& board) {
+[[nodiscard]] U64 MoveGeneration::Get_Pseudo_Legal_Moves(const int square, const PieceColour colour,
+                                                        const PieceType pieceType, const Board& board) {
 
     const U64 friendlyPieces = colour == WHITE ? board.Get_White_Pieces() : board.Get_Black_Pieces();
     const U64 enemyPieces = colour == WHITE ? board.Get_Black_Pieces() : board.Get_White_Pieces();
@@ -99,7 +99,7 @@ U64 MoveGeneration::Generate_Pawn_En_Passant(const int square, const PieceColour
 
             return (pawnMoves & ~occupancy) |
                 (Get_Pawn_Attacks(square, colour) & enemyPieces) |
-                    Generate_Pawn_En_Passant(square, colour, board);
+                Generate_Pawn_En_Passant(square, colour, board);
         }
         case KNIGHT:
             return Get_Knight_Moves(square) & ~friendlyPieces;
@@ -118,7 +118,7 @@ U64 MoveGeneration::Generate_Pawn_En_Passant(const int square, const PieceColour
 }
 
 U64 MoveGeneration::Filter_Legal_Moves(U64 moves, const int square, const PieceColour colour,
-                                   const PieceType pieceType, Board& board) {
+                                        const PieceType pieceType, Board& board) {
 
     U64 legalMoves = 0ULL;
     U64 kingBB = board.Get_Piece_Bitboard(KING, colour);
@@ -142,9 +142,7 @@ U64 MoveGeneration::Filter_Legal_Moves(U64 moves, const int square, const PieceC
         Board_Analyser::Set_Move_Flags(tempMove, board);
         board.moveHistory.push_back(tempMove);
 
-        if(pieceType == KING) {
-            kingBB = 1ULL << moveSquare;
-        }
+        if(pieceType == KING) { kingBB = 1ULL << moveSquare; }
 
         if(Board_Analyser::Is_King_In_Check(kingBB, colour, board) == -1) {
             legalMoves |= (1ULL << moveSquare);
@@ -220,7 +218,7 @@ Move MoveGeneration::Detect_Capture(Move& move, const Board& board) {
 [[nodiscard]] U64 MoveGeneration::Get_Pawn_Attacks(const int square, const PieceColour colour) {return pawnAttacks[colour == WHITE ? 0 : 1][square];
 }
 
-std::vector<Move> MoveGeneration::Generate_All_Moves(const PieceColour colour, Board& board) const {
+std::vector<Move> MoveGeneration::Generate_All_Moves(const PieceColour colour, Board& board) {
     std::vector<Move> allMoves;
 
     for(const PieceType piece : {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING}) {

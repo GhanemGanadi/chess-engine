@@ -39,7 +39,7 @@ public:
     [[nodiscard]] static U64 Get_Pawn_Attacks(int square, PieceColour colour);
 
     static U64 Get_Legal_Moves(int square, PieceColour colour, PieceType pieceType, Board& board) ;
-    std::vector<Move> Generate_All_Moves(PieceColour colour, Board& board) const;
+    static std::vector<Move> Generate_All_Moves(PieceColour colour, Board& board) ;
     static void Display_All_Moves(const std::vector<Move>& moves);
 
     static U64 Get_Piece_Attacks(PieceType piece, int square, PieceColour colour, const Board& board);

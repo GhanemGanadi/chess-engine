@@ -38,15 +38,15 @@ void Debug_Perft_State(const Board& board, const std::string& message) {
     std::cout << "========================\n\n";
 }
 
-U64 Perft::Run_Perft(Board& board, const int depth, const PieceColour side) {
-    if (depth == 0) return 1;
+int Perft::Run_Perft(Board& board, const int depth) {
+    if (depth == 0) { return 1; }
 
-    U64 nodes = 0;
-    std::vector<Move> allMoves = moveGen.Generate_All_Moves(side, board);
+    int nodes = 0;
+    std::vector<Move> allMoves = MoveGeneration::Generate_All_Moves(board.currentTurn, board);
 
     for (Move& move : allMoves) {
         if (Board_Analyser::Make_Move(move, true, board)) {
-            nodes += Run_Perft(board, depth - 1, (side == WHITE ? BLACK : WHITE));
+            nodes += Run_Perft(board, depth - 1);
             board.Undo_Move(false);
         }
     }
@@ -54,14 +54,13 @@ U64 Perft::Run_Perft(Board& board, const int depth, const PieceColour side) {
     return nodes;
 }
 
-void Perft::Perft_Divide(Board& board, const int depth, const PieceColour side) {
-    std::vector<Move> allMoves = moveGen.Generate_All_Moves(side, board);
+void Perft::Perft_Divide(Board& board, const int depth) {
+    std::vector<Move> allMoves = MoveGeneration::Generate_All_Moves(board.currentTurn, board);
     int totalNodes = 0;
-
     for (Move& move : allMoves) {
 
         if (Board_Analyser::Make_Move(move, true, board)) {
-            int nodes = Run_Perft(board, depth - 1, board.currentTurn);
+            int nodes = Run_Perft(board, depth - 1);
             std::cout << Square_To_String(move.Get_From()) << Square_To_String(move.Get_To());
 
             if (move.Is_Capture()) std::cout << " capture";
@@ -75,6 +74,7 @@ void Perft::Perft_Divide(Board& board, const int depth, const PieceColour side) 
             totalNodes += nodes;
 
             board.Undo_Move(false);
+            // board = tempBoard;
 
         }
     }
@@ -92,7 +92,7 @@ PerftStats Perft::Run_Perft_Stats(Board& board, const int depth, const PieceColo
         return stats;
     }
 
-    std::vector<Move> allMoves = moveGen.Generate_All_Moves(side, board);
+    std::vector<Move> allMoves = MoveGeneration::Generate_All_Moves(side, board);
     if (allMoves.empty()) return stats;
 
     for (Move& singleMove : allMoves) {
