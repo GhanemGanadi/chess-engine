@@ -11,7 +11,7 @@ namespace Board_Analyser {
 
     int Is_Square_Attacked(int square, PieceColour attackerColour, const Board& board);
 
-    bool Handle_Castling(const Board& board, const Move& move);
+    bool Handle_Castling(Move& move, Board& board);
     bool Can_Castle(const Move &move, const Board &board);
 
     bool Can_Promote(const Move& move);

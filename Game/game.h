@@ -37,16 +37,17 @@ public:
             turnString = currentTurn == WHITE ? "White To Move\n" : "Black To Move\n";
 
             if (currentTurn == WHITE) {
-            Move bestMove = Engine::Search::Find_Best_Move(tempBoard, 4 , WHITE);
-                input = Square_To_String(bestMove.Get_From()) + Square_To_String(bestMove.Get_To());
-                board.Print_Move_Details(bestMove);
-                // std::cout << turnString;
-                // std::cout << "Input your move (or 'undo' to take back last move): ";
-                // std::cin >> input;
+            // Move bestMove = Engine::Search::Find_Best_Move(tempBoard, 4 , WHITE);
+                // input = Square_To_String(bestMove.Get_From()) + Square_To_String(bestMove.Get_To());
+                // board.Print_Move_Details(bestMove);
+
+            std::vector allMoves = MoveGeneration::Generate_All_Moves(currentTurn, board);
+            MoveGeneration::Display_All_Moves(allMoves);
+                std::cout << turnString;
+                std::cout << "Input your move (or 'undo' to take back last move): ";
+                std::cin >> input;
             }
 
-            // std::vector allMoves = Move_Generation.Generate_All_Moves(currentTurn, board);
-            // MoveGeneration::Display_All_Moves(allMoves);
 
             if (currentTurn == BLACK) {
                 std::cout << turnString;

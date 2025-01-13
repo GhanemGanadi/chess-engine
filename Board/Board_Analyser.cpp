@@ -11,19 +11,20 @@ namespace Board_Analyser {
             return Get_Square(pawnAttacks & board.Get_Piece_Bitboard(PAWN, attackerColour));
         }
 
-        U64 knightAttacks = MoveGeneration::Get_Knight_Moves(square);
+        const U64 knightAttacks = MoveGeneration::Get_Knight_Moves(square);
         if (knightAttacks & board.Get_Piece_Bitboard(KNIGHT, attackerColour)) {
             return Get_Square(knightAttacks & board.Get_Piece_Bitboard(KNIGHT, attackerColour));
         }
 
-        U64 kingAttacks = MoveGeneration::Get_King_Moves(square);
+        const U64 kingAttacks = MoveGeneration::Get_King_Moves(square);
         if (kingAttacks & board.Get_Piece_Bitboard(KING, attackerColour)){
             return Get_Square(kingAttacks & board.Get_Piece_Bitboard(KING, attackerColour));
         }
 
-        U64 occupancy = board.Get_All_Pieces();
+        const U64 occupancy = board.Get_All_Pieces();
 
-        U64 rookAttacks = Tables::Get_Rook_Moves(square, occupancy);
+        board.Print_Detailed_Board();
+        const U64 rookAttacks = Tables::Get_Rook_Moves(square, occupancy);
         if (rookAttacks & (board.Get_Piece_Bitboard(ROOK, attackerColour))) {
             return Get_Square(rookAttacks & board.Get_Piece_Bitboard(ROOK, attackerColour));
         }
@@ -181,18 +182,18 @@ namespace Board_Analyser {
             (isKingSide ? h8 : a8);
 
         if(colour == WHITE) {
-            if(isKingSide && board.castlingRights.whiteKingSideRookMoves > 0) { return false; }
-            if(!isKingSide && board.castlingRights.whiteQueenSideRookMoves > 0) { return false; }
+            if(isKingSide && !board.Has_White_King_Side_Castling_Rights()) { return false; }
+            if(!isKingSide && !board.Has_White_Queen_Side_Castling_Rights()) { return false; }
         }
         else {
-            if(isKingSide && board.castlingRights.blackKingSideRookMoves > 0) { return false; }
-            if(!isKingSide && board.castlingRights.blackQueenSideRookMoves > 0) { return false; }
+            if(isKingSide && !board.Has_Black_King_Side_Castling_Rights()) { return false; }
+            if(!isKingSide && !board.Has_Black_Queen_Side_Castling_Rights()) { return false; }
         }
 
         if(!(board.Get_Piece_Bitboard(ROOK, colour) & (1ULL << rookSquare))) { return false; }
 
         const U64 occupancy = board.Get_All_Pieces();
-        const U64 betweenSquares = Get_Path_Between(move.Get_From(), move.Get_To());
+        const U64 betweenSquares = Board::Get_Castling_Path(colour, isKingSide);
         if(betweenSquares & occupancy) { return false; }
 
         const int square1 = move.Get_From() + (isKingSide ? 1 : -1);

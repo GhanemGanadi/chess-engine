@@ -17,17 +17,22 @@ enum class Game_State {
 class Board {
     std::array<U64,6> blackPieceArray;
     std::array<U64,6> whitePieceArray;
-    std::array<U64, 4> rookTracking;     // black queen, black king, white queen, white king
 
     U64 whitePawn = 0ULL, whiteKnight = 0ULL, whiteBishop = 0ULL, whiteRook = 0ULL,
     whiteQueen = 0ULL, whiteKing = 0ULL;
     U64 blackPawn = 0ULL, blackKnight = 0ULL, blackBishop = 0ULL, blackRook = 0ULL,
     blackQueen = 0ULL, blackKing = 0ULL;
 
+    static constexpr U64 whiteQueenSideMask = 1ULL << b1 | 1ULL << c1 | 1ULL << d1;
+    static constexpr U64 whiteKingSideMask = 1ULL << f1 | 1ULL << g1;
+
+    static constexpr U64 blackKingSideMask = 1ULL << f8 | 1ULL << g8;
+    static constexpr U64 blackQueenSideMask = 1ULL << b8 | 1ULL << c8 | 1ULL << d8;
 
     U64 whitePieces = 0ULL;
     U64 blackPieces = 0ULL;
     U64 allPieces = 0ULL;
+
 
     void Update_Combined_Bitboards() {
         whitePieces = whitePawn | whiteKnight | whiteBishop | whiteRook | whiteQueen | whiteKing;
@@ -38,6 +43,7 @@ class Board {
     Game_State boardGameState = Game_State::ACTIVE;
 
 public:
+
     Board() {
         Update_Combined_Bitboards();
         blackPieceArray = {blackPawn, blackKnight, blackBishop, blackRook, blackQueen, blackKing};
@@ -175,6 +181,25 @@ public:
         Set_Piece_Bitboard(capturedPiece, enemyColour, capturedPieceBB);
     }
 
+    U64 static Get_Castling_Path(const PieceColour colour, const bool kingSide) {
+        if (colour == WHITE) {
+            switch (kingSide) {
+                case true:
+                    return whiteKingSideMask;
+
+                case false:
+                    return whiteQueenSideMask;
+            }
+        }
+        switch (kingSide) {
+            case true:
+                return blackKingSideMask;
+
+            case false:
+                return blackQueenSideMask;
+        }
+        return 0ULL;
+    }
 
     std::string Board_To_Fen() const {
         std::string fen;

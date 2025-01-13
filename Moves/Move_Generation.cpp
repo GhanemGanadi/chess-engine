@@ -117,6 +117,53 @@ U64 MoveGeneration::Generate_Pawn_En_Passant(const int square, const PieceColour
     }
 }
 
+    bool Make_Move_For_Filter(Move& move, Board& board) {
+        const PieceType pieceType = move.Get_Piece_Type();
+        const PieceColour pieceColour = move.Get_Colour();
+
+        if (pieceType == NO_PIECE){ return false; }
+
+        const U64 pieceLocation = 1ULL << move.Get_From();
+        const U64 pieceDestination = 1ULL << move.Get_To();
+        const U64 pieceBB = board.Get_Piece_Bitboard(pieceType, pieceColour);
+
+        if (!(pieceBB & pieceLocation)){ return false; }
+
+
+        if (pieceType == PAWN) {
+            Board_Analyser::Handle_En_Passant(move, board);
+            if (Board_Analyser::Can_Promote(move)) {
+                Board_Analyser::Promote_Pawn(move, move.Get_Promotion_Piece(), board);
+            }
+        }
+
+        else if (pieceType == KING) {
+            if (abs(move.Get_To() - move.Get_From()) == 2) {
+                if (Board_Analyser::Handle_Castling(move, board)) {
+                    board.currentTurn = board.currentTurn == WHITE ? BLACK : WHITE;
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        const PieceColour enemyColour = pieceColour == WHITE ? BLACK : WHITE;
+        const U64 enemyPieces = pieceColour == WHITE ? board.Get_Black_Pieces() : board.Get_White_Pieces();
+
+        if (pieceDestination & enemyPieces) {
+            Board_Analyser::Handle_Captures(move, board);
+        }
+
+        Board_Analyser::Move_Piece(move, board);
+
+        Board_Analyser::Is_Checkmate(enemyColour, board);
+        Board_Analyser::Is_Fifty_Move_Draw(board);
+
+        Board_Analyser::Update_Half_Clock(move, board);
+        board.moveHistory.push_back(move);
+        return true;
+    }
+
 U64 MoveGeneration::Filter_Legal_Moves(U64 moves, const int square, const PieceColour colour,
                                         const PieceType pieceType, Board& board) {
 
@@ -128,8 +175,7 @@ U64 MoveGeneration::Filter_Legal_Moves(U64 moves, const int square, const PieceC
         const int moveSquare = Get_LS1B_Index(moves);
         moves &= moves - 1;
 
-        Move tempMove(static_cast<Squares>(square), static_cast<Squares>(moveSquare),
-                     pieceType, colour);
+        Move tempMove(static_cast<Squares>(square), static_cast<Squares>(moveSquare), pieceType, colour);
 
         if((1ULL << moveSquare) & enemyBB) {
             Board_Analyser::Handle_Captures(tempMove, board);
@@ -138,6 +184,7 @@ U64 MoveGeneration::Filter_Legal_Moves(U64 moves, const int square, const PieceC
         if (pieceType == PAWN){ Board_Analyser::Handle_En_Passant(tempMove, board); }
 
         // Board_Analyser::Make_Move(tempMove, true, board);
+        // Make_Move_For_Filter(tempMove, board);
         Board_Analyser::Move_Piece(tempMove, board);
         Board_Analyser::Set_Move_Flags(tempMove, board);
         board.moveHistory.push_back(tempMove);
