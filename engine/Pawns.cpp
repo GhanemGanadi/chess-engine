@@ -8,9 +8,8 @@ namespace Engine {
         U64 pawns = 0ULL;
 		const Move& previousMove = board.moveHistory.back();
 
-    	if (!previousMove.Is_Castling())
-		if (colour == WHITE) { pawns = board.Get_White_Pawn(); }
-        else { pawns = board.Get_Black_Pawn(); }
+    	// if (!previousMove.Is_Castling())
+        pawns = board.Get_Piece_Bitboard(PAWN, colour);
 
 	    if (kingSquare == g1 || kingSquare == g8) {
 			pawns &= (FILE_H | FILE_G | FILE_F);

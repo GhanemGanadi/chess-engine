@@ -55,7 +55,11 @@ int Perft::Run_Perft(Board& board, const int depth) {
 }
 
 void Perft::Perft_Divide(Board& board, const int depth) {
+    Print_Bitboard(board.whiteKingRook);
+    Print_Bitboard(board.whiteQueenRook);
     std::vector<Move> allMoves = MoveGeneration::Generate_All_Moves(board.currentTurn, board);
+    Print_Bitboard(board.whiteKingRook);
+    Print_Bitboard(board.whiteQueenRook);
     int totalNodes = 0;
     for (Move& move : allMoves) {
 

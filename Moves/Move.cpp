@@ -1,10 +1,12 @@
 #include "Move.h"
+
+#include "../Board/Board.h"
 #include "../Board/Board_Analyser.h"
 
 
 namespace Move_Parsing {
 
-    Move Parse_Move(const std::string& input, const PieceColour colour, const Board& board) {
+    Move Parse_Move(const std::string& input, const PieceColour colour, Board& board) {
         Move userMove = Move(a8,a8, NO_PIECE, colour);
         const std::string fromSquare = input.substr(0, 2);
         const std::string toSquare = input.substr(2, 2);
@@ -13,11 +15,18 @@ namespace Move_Parsing {
 
         const auto from = static_cast<Squares>(('8' - fromSquare[1]) * 8 + (fromSquare[0] - 'a'));
         const auto to = static_cast<Squares>(('8' - toSquare[1]) * 8 + (toSquare[0] - 'a'));
-        const PieceType pieceType = Board_Analyser::Find_Piece_Type(from, colour, board);
+        const PieceType piece = Board_Analyser::Find_Piece_Type(from, colour, board);
 
         userMove.Set_To(to);
         userMove.Set_From(from);
-        userMove.Set_Piece_Type(pieceType);
+        userMove.Set_Piece_Type(piece);
+
+        if (piece == ROOK) {
+            if (1ULL << from & board.whiteKingRook) { userMove.Set_Moved_Rook(WHITE_KING_SIDE); }
+            else if (1ULL << from & board.whiteQueenRook) { userMove.Set_Moved_Rook(WHITE_QUEEN_SIDE); }
+            else if (1ULL << from & board.blackKingRook) { userMove.Set_Moved_Rook(BLACK_KING_SIDE); }
+            else if (1ULL << from & board.blackQueenRook) { userMove.Set_Moved_Rook(BLACK_QUEEN_SIDE); }
+        }
 
         return userMove;
     }

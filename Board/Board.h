@@ -15,13 +15,20 @@ enum class Game_State {
 
 
 class Board {
+    int Half_Clock = 0;
     std::array<U64,6> blackPieceArray;
     std::array<U64,6> whitePieceArray;
 
-    U64 whitePawn = 0ULL, whiteKnight = 0ULL, whiteBishop = 0ULL, whiteRook = 0ULL,
-    whiteQueen = 0ULL, whiteKing = 0ULL;
-    U64 blackPawn = 0ULL, blackKnight = 0ULL, blackBishop = 0ULL, blackRook = 0ULL,
-    blackQueen = 0ULL, blackKing = 0ULL;
+    U64 whitePawn = 0ULL, whiteKnight = 0ULL, whiteBishop = 0ULL,
+        whiteRook = 0ULL, whiteQueen = 0ULL, whiteKing = 0ULL;
+
+    U64 blackPawn = 0ULL, blackKnight = 0ULL, blackBishop = 0ULL,
+        blackRook = 0ULL, blackQueen = 0ULL, blackKing = 0ULL;
+
+    U64 whitePieces = 0ULL;
+    U64 blackPieces = 0ULL;
+
+
 
     static constexpr U64 whiteQueenSideMask = 1ULL << b1 | 1ULL << c1 | 1ULL << d1;
     static constexpr U64 whiteKingSideMask = 1ULL << f1 | 1ULL << g1;
@@ -29,25 +36,25 @@ class Board {
     static constexpr U64 blackKingSideMask = 1ULL << f8 | 1ULL << g8;
     static constexpr U64 blackQueenSideMask = 1ULL << b8 | 1ULL << c8 | 1ULL << d8;
 
-    U64 whitePieces = 0ULL;
-    U64 blackPieces = 0ULL;
-    U64 allPieces = 0ULL;
-
-
-    void Update_Combined_Bitboards() {
+    void Update_Combined_Bitboards(const bool updateArray) {
         whitePieces = whitePawn | whiteKnight | whiteBishop | whiteRook | whiteQueen | whiteKing;
         blackPieces = blackPawn | blackKnight | blackBishop | blackRook | blackQueen | blackKing;
-        allPieces = whitePieces | blackPieces;
+        if (updateArray) {
+            blackPieceArray = {blackPawn, blackKnight, blackBishop, blackRook, blackQueen, blackKing};
+            whitePieceArray = {whitePawn, whiteKnight, whiteBishop, whiteRook, whiteQueen, whiteKing};
+        }
     }
 
     Game_State boardGameState = Game_State::ACTIVE;
 
 public:
+    U64 whiteKingRook = 0ULL;
+    U64 whiteQueenRook = 0ULL;
+    U64 blackKingRook = 0ULL;
+    U64 blackQueenRook = 0ULL;
 
     Board() {
-        Update_Combined_Bitboards();
-        blackPieceArray = {blackPawn, blackKnight, blackBishop, blackRook, blackQueen, blackKing};
-        whitePieceArray = {whitePawn, whiteKnight, whiteBishop, whiteRook, whiteQueen, whiteKing};
+        Update_Combined_Bitboards(true);
     }
     struct CastlingRights {
         int whiteKingSideRookMoves = 0;
@@ -58,69 +65,28 @@ public:
 
     std::vector<Move> moveHistory;
     PieceColour currentTurn = WHITE;
-    int Half_Clock = 0;
-
-    static void Print_Move_Details(const Move& move) {
-        std::cout << "\nMove Details:\n"
-                  << "From: " << Square_To_String(move.Get_From())
-                  << " To: " << Square_To_String(move.Get_To())
-                  << "\nPiece: " << (move.Get_Colour() == WHITE ? "White " : "Black ") << Get_Piece_Name(move.Get_Piece_Type());
-
-        if(move.Is_Capture()) std::cout << "\nCaptures: " << Get_Piece_Name(move.Get_Captured_Piece());
-        if(move.Is_Castling()) std::cout << "\nCastling: " << (move.Get_Castle_Side() ? "Kingside" : "Queenside");
-        if(move.Is_En_Passant()) std::cout << "\nEn Passant Capture";
-        if(move.Get_Promotion_Piece() != NO_PIECE) std::cout << "\nPromotion to: " << Get_Piece_Name(move.Get_Promotion_Piece());
-        std::cout << "\n";
-    }
 
     void Undo_Move(const bool pseudoLegal) {
         if (moveHistory.empty()) { return; }
         currentTurn = currentTurn == WHITE ? BLACK : WHITE;
 
         const Move previousMove = moveHistory.back();
+        const PieceColour pieceColour = previousMove.Get_Colour();
+        const PieceType piece = previousMove.Get_Piece_Type();
+
         moveHistory.pop_back();
 
         if(previousMove.Is_Castling()) {
             Reverse_Castle(previousMove);
-            if(!pseudoLegal) {Set_Decrement_Half_Clock();}
+            if(!pseudoLegal) {Adjust_Half_Clock(false); }
             return;
         }
 
         Reverse_Promotion(previousMove);
         Reverse_Capture(previousMove);
 
+        if (piece == KING || piece == ROOK) { Adjust_Castling_Flags(previousMove, true); }
 
-        if (previousMove.Get_Moved_Rook() != NOT_ROOK) {
-            switch (previousMove.Get_Moved_Rook()) {
-                case WHITE_KING_SIDE:
-                    Decrement_White_King_Side_Rook_Moves();
-                    break;
-                case WHITE_QUEEN_SIDE:
-                    Decrement_White_Queen_Side_Rook_Moves();
-                    break;
-                case BLACK_KING_SIDE:
-                    Decrement_Black_King_Side_Rook_Moves();
-                    break;
-                case BLACK_QUEEN_SIDE:
-                    Decrement_Black_Queen_Side_Rook_Moves();
-                    break;
-                default:
-                    break;
-            }
-        }
-        if (previousMove.Get_Piece_Type() == KING) {
-            if (previousMove.Get_Colour() == WHITE) {
-                Decrement_White_King_Side_Rook_Moves();
-                Decrement_White_Queen_Side_Rook_Moves();
-            }
-            else {
-                Decrement_Black_King_Side_Rook_Moves();
-                Decrement_Black_Queen_Side_Rook_Moves();
-            }
-        }
-
-        const PieceColour pieceColour = previousMove.Get_Colour();
-        const PieceType piece = previousMove.Get_Piece_Type();
 
         U64 pieceBB = Get_Piece_Bitboard(piece, pieceColour);
         pieceBB = Remove_Bit(pieceBB, previousMove.Get_To());
@@ -128,13 +94,13 @@ public:
 
         Set_Piece_Bitboard(piece, pieceColour, pieceBB);
 
-        if(!pseudoLegal) {Set_Decrement_Half_Clock();}
+        if(!pseudoLegal) {Adjust_Half_Clock(false); }
    }
 
     void Reverse_Castle(const Move& move) {
         const PieceColour colour = move.Get_Colour();
         U64 kingBB = Get_Piece_Bitboard(KING, colour);
-        U64 rookBB = Get_Piece_Bitboard(ROOK, colour);
+        U64 rookBB = Get_Piece_Bitboard(ROOK, colour, move.Get_Moved_Rook());
 
         kingBB = Remove_Bit(kingBB, move.Get_To());
         kingBB = Set_Bit(kingBB, move.Get_From());
@@ -145,16 +111,9 @@ public:
         rookBB = Set_Bit(rookBB, squareToRecover);
 
         Set_Piece_Bitboard(KING, colour, kingBB);
-        Set_Piece_Bitboard(ROOK, colour, rookBB);
+        Set_Piece_Bitboard(ROOK, colour, rookBB, move.Get_Castle_Side());
 
-        if (colour == WHITE) {
-            castlingRights.whiteKingSideRookMoves -= 9999;
-            castlingRights.whiteQueenSideRookMoves -= 9999;
-        }
-        else {
-            castlingRights.blackKingSideRookMoves -= 9999;
-            castlingRights.blackQueenSideRookMoves -= 9999;
-        }
+        Set_Castling_Flag(colour, true);
     }
 
     void Reverse_Promotion(const Move& move) {
@@ -181,27 +140,207 @@ public:
         Set_Piece_Bitboard(capturedPiece, enemyColour, capturedPieceBB);
     }
 
-    U64 static Get_Castling_Path(const PieceColour colour, const bool kingSide) {
-        if (colour == WHITE) {
-            switch (kingSide) {
-                case true:
-                    return whiteKingSideMask;
+    void Set_Piece_Bitboard(const PieceType piece, const PieceColour colour, const U64 bitboard,
+                            const std::optional<RookType> kingSide=std::nullopt) {
+        if(colour == WHITE) {
+            switch(piece) {
+                case PAWN: {
+                    whitePawn = bitboard;
+                    whitePieceArray[PAWN] = bitboard;
+                    break;
+                }
+                case KNIGHT: {
+                    whiteKnight = bitboard;
+                    whitePieceArray[KNIGHT] = bitboard;
+                    break;
+                }
+                case BISHOP: {
+                    whiteBishop = bitboard;
+                    whitePieceArray[BISHOP] = bitboard;
+                    break;
+                }
+                case ROOK: {
+                    whiteRook = bitboard;
+                    whitePieceArray[ROOK] = bitboard;
+                    if (kingSide) { whiteKingRook = bitboard; } else {whiteQueenRook = bitboard; }
+                    break;
+                }
+                case QUEEN: {
+                    whiteQueen = bitboard;
+                    whitePieceArray[QUEEN] = bitboard;
+                    break;
+                }
+                case KING:{
+                    whiteKing = bitboard;
+                    whitePieceArray[KING] = bitboard;
+                    break;
+                }
+                default:
+                    break;
+            }
+        } else {
+            switch(piece) {
+                case PAWN: {
+                    blackPawn = bitboard;
+                    blackPieceArray[PAWN] = bitboard;
+                    break;
+                }
+                case ROOK: {
+                    blackRook = bitboard;
+                    blackPieceArray[ROOK] = bitboard;
+                    if (kingSide) { blackKingRook = bitboard; } else {blackQueenRook = bitboard; }
+                    break;
+                }
 
-                case false:
-                    return whiteQueenSideMask;
+                case KNIGHT: {
+                    blackKnight = bitboard;
+                    blackPieceArray[KNIGHT] = bitboard;
+                    break;
+                }
+                case BISHOP: {
+                    blackBishop = bitboard;
+                    blackPieceArray[BISHOP] = bitboard;
+                    break;
+                }
+                case QUEEN: {
+                    blackQueen = bitboard;
+                    blackPieceArray[QUEEN] = bitboard;
+                    break;
+                }
+                case KING: {
+                    blackKing = bitboard;
+                    blackPieceArray[KING] = bitboard;
+                    break;
+                }
+                default:
+                    break;
             }
         }
-        switch (kingSide) {
-            case true:
-                return blackKingSideMask;
-
-            case false:
-                return blackQueenSideMask;
-        }
-        return 0ULL;
+        Update_Combined_Bitboards(false);
     }
 
-    std::string Board_To_Fen() const {
+    [[nodiscard]] U64 Get_Piece_Bitboard(const PieceType piece, const PieceColour colour,
+                                        const std::optional<RookType> kingSide=std::nullopt) const {
+        if(colour == WHITE) {
+            switch(piece) {
+                case PAWN: return whitePawn;
+                case ROOK:{
+                    if (!kingSide.has_value()) { return whiteRook; }
+                    return kingSide.value() == WHITE_KING_SIDE ? whiteKingRook : whiteQueenRook;
+                };
+                case KNIGHT: return whiteKnight;
+                case BISHOP: return whiteBishop;
+                case QUEEN: return whiteQueen;
+                case KING: return whiteKing;
+                default: return 0ULL;
+            }
+        }
+        switch(piece) {
+            case PAWN: return blackPawn;
+            case ROOK:{
+                if (!kingSide.has_value()) { return blackRook; }
+                return kingSide.value() == BLACK_KING_SIDE ? blackKingRook : blackQueenRook;
+            };
+            case KNIGHT: return blackKnight;
+            case BISHOP: return blackBishop;
+            case QUEEN: return blackQueen;
+            case KING: return blackKing;
+            default: return 0ULL;
+        }
+
+    }
+
+    [[nodiscard]] U64 Get_White_Pieces() const { return whitePieces; }
+    [[nodiscard]] U64 Get_Black_Pieces() const { return blackPieces; }
+    [[nodiscard]] U64 Get_All_Pieces() const { return whitePieces | blackPieces; }
+
+    [[nodiscard]] Game_State Get_Game_State() const { return boardGameState; }
+    [[nodiscard]] int Get_Half_Clock() const { return Half_Clock; }
+
+    [[nodiscard]] U64 Get_Castling_Path(const PieceColour colour, const bool kingSide) const {
+        return colour == WHITE ? (kingSide ? whiteKingSideMask : whiteQueenSideMask) :
+                                (kingSide ? blackKingSideMask : blackQueenSideMask);
+
+    }
+    [[nodiscard]] bool Has_Castling_Rights(const PieceColour colour, const bool kingSide) const {
+        return colour == WHITE ?
+            (kingSide ? castlingRights.whiteKingSideRookMoves == 0: castlingRights.whiteQueenSideRookMoves == 0) :
+            (kingSide ? castlingRights.blackKingSideRookMoves == 0: castlingRights.blackQueenSideRookMoves == 0);
+    }
+
+    [[nodiscard]] bool Has_White_King_Side_Castling_Rights() const { return castlingRights.whiteKingSideRookMoves <= 0; }
+    [[nodiscard]] bool Has_White_Queen_Side_Castling_Rights() const { return castlingRights.whiteQueenSideRookMoves <= 0; }
+
+    [[nodiscard]] bool Has_Black_King_Side_Castling_Rights() const { return castlingRights.blackKingSideRookMoves <= 0; }
+    [[nodiscard]] bool Has_Black_Queen_Side_Castling_Rights() const { return castlingRights.blackQueenSideRookMoves <= 0; }
+
+    void Adjust_Castling_Flags(const Move & move, const bool reset) {
+        const int rights = reset == true ? -1 : 1;
+
+        switch (move.Get_Moved_Rook()) {
+            case WHITE_QUEEN_SIDE:
+                castlingRights.whiteQueenSideRookMoves += rights;
+                break;
+
+            case BLACK_QUEEN_SIDE:
+                castlingRights.blackQueenSideRookMoves += rights;
+                break;
+
+            case WHITE_KING_SIDE:
+                castlingRights.whiteKingSideRookMoves += rights;
+                break;
+
+            case BLACK_KING_SIDE:
+                castlingRights.blackKingSideRookMoves += rights;
+                break;
+
+            default:
+                switch (move.Get_Colour()) {
+                    case WHITE:
+                        castlingRights.whiteKingSideRookMoves += rights;
+                        castlingRights.whiteQueenSideRookMoves += rights;
+                        break;
+
+                    case BLACK:
+                        castlingRights.blackKingSideRookMoves += rights;
+                        castlingRights.blackQueenSideRookMoves += rights;
+                        break;
+
+                    default:;
+                }
+
+        }
+
+    }
+
+    void Set_Castling_Flag(const PieceColour colour, const bool reset) {
+        const int rights = reset == true ? -9999 : 9999;
+        switch (colour) {
+            case WHITE:
+                castlingRights.whiteKingSideRookMoves += rights;
+                castlingRights.whiteQueenSideRookMoves += rights;
+                break;
+
+            case BLACK:
+                castlingRights.blackKingSideRookMoves += rights;
+                castlingRights.blackQueenSideRookMoves += rights;
+                break;
+
+            default:;
+        }
+    }
+
+    void Adjust_Half_Clock(const std::optional<bool> increment=std::nullopt, const bool reset=false) {
+        if (reset) { Half_Clock = 0; }
+
+        if (increment.has_value()) {
+            Half_Clock = increment.value() ? Half_Clock + 1 : Half_Clock - 1;
+        }
+    }
+
+    void Set_Game_State(const Game_State state) { boardGameState = state; }
+
+    [[nodiscard]] std::string Board_To_Fen() const {
         std::string fen;
         int emptyCount = 0;
 
@@ -249,7 +388,6 @@ public:
         // Add turn
         fen += currentTurn == WHITE ? " w " : " b ";
 
-        // Add castling rights
         std::string castling;
         if (Has_White_King_Side_Castling_Rights()) castling += 'K';
         if (Has_White_Queen_Side_Castling_Rights()) castling += 'Q';
@@ -258,11 +396,10 @@ public:
 
         fen += castling.empty() ? "-" : castling;
 
-        // Add en passant square, halfmove clock, and fullmove number
         fen += " - " + std::to_string(Half_Clock) + " 1";
 
         return fen;
-    }
+}
 
     void Initialise_From_Fen(const std::string& fen) {
 
@@ -299,204 +436,37 @@ public:
             switch(c) {
                 case 'K':
                     castlingRights.whiteKingSideRookMoves = 0;
-
-                break;
+                    whiteKingRook = 1ULL << h1;
+                    break;
                 case 'Q':
                     castlingRights.whiteQueenSideRookMoves = 0;
-                break;
+                    whiteQueenRook = 1ULL << a1;
+                    break;
                 case 'k':
                     castlingRights.blackKingSideRookMoves = 0;
-                break;
+                    blackKingRook = 1ULL << h8;
+                    break;
                 case 'q':
                     castlingRights.blackQueenSideRookMoves = 0;
-                break;
-            }
-        }
-
-        whitePieceArray = {whitePawn, whiteKnight, whiteBishop, whiteRook, whiteQueen, whiteKing};
-        blackPieceArray = {blackPawn, blackKnight, blackBishop,blackRook, blackQueen, blackKing};
-
-        Update_Combined_Bitboards();
-    }
-
-    [[nodiscard]] Game_State Get_Game_State() const { return boardGameState; }
-    [[nodiscard]] int Get_Half_Clock() const { return Half_Clock; }
-
-    [[nodiscard]] U64 Get_White_Pawn() const { return whitePawn; }
-    [[nodiscard]] U64 Get_White_Knight() const { return whiteKnight; }
-    [[nodiscard]] U64 Get_White_Bishop() const { return whiteBishop; }
-    [[nodiscard]] U64 Get_White_Rook() const { return whiteRook; }
-    [[nodiscard]] U64 Get_White_Queen() const { return whiteQueen; }
-    [[nodiscard]] U64 Get_White_King() const { return whiteKing; }
-
-    [[nodiscard]] U64 Get_Black_Pawn() const { return blackPawn; }
-    [[nodiscard]] U64 Get_Black_Knight() const { return blackKnight; }
-    [[nodiscard]] U64 Get_Black_Bishop() const { return blackBishop; }
-    [[nodiscard]] U64 Get_Black_Rook() const { return blackRook; }
-    [[nodiscard]] U64 Get_Black_Queen() const { return blackQueen; }
-    [[nodiscard]] U64 Get_Black_King() const { return blackKing; }
-
-    [[nodiscard]] U64 Get_White_Pieces() const { return whitePieces; }
-    [[nodiscard]] U64 Get_Black_Pieces() const { return blackPieces; }
-    [[nodiscard]] U64 Get_All_Pieces() const { return allPieces; }
-
-    [[nodiscard]] bool Has_White_King_Side_Castling_Rights() const { return castlingRights.whiteKingSideRookMoves <= 0; }
-    void Increment_White_King_Side_Rook_Moves() { castlingRights.whiteKingSideRookMoves++; }
-    void Decrement_White_King_Side_Rook_Moves() { castlingRights.whiteKingSideRookMoves--; }
-
-    [[nodiscard]] bool Has_White_Queen_Side_Castling_Rights() const { return castlingRights.whiteQueenSideRookMoves <= 0; }
-    void Increment_White_Queen_Side_Rook_Moves() { castlingRights.whiteQueenSideRookMoves++; }
-    void Decrement_White_Queen_Side_Rook_Moves() { castlingRights.whiteQueenSideRookMoves--; }
-
-    [[nodiscard]] bool Has_Black_King_Side_Castling_Rights() const { return castlingRights.blackKingSideRookMoves <= 0; }
-    void Increment_Black_King_Side_Rook_Moves() { castlingRights.blackKingSideRookMoves++; }
-    void Decrement_Black_King_Side_Rook_Moves() { castlingRights.blackKingSideRookMoves--; }
-
-    [[nodiscard]] bool Has_Black_Queen_Side_Castling_Rights() const { return castlingRights.blackQueenSideRookMoves <= 0; }
-    void Increment_Black_Queen_Side_Rook_Moves() { castlingRights.blackQueenSideRookMoves++; }
-    void Decrement_Black_Queen_Side_Rook_Moves() { castlingRights.blackQueenSideRookMoves--; }
-
-    void Set_Increment_Half_Clock() { Half_Clock++; }
-    void Set_Decrement_Half_Clock() { Half_Clock--; }
-    void Set_Reset_Half_Clock() { Half_Clock = 0; }
-
-    void Set_Game_State(const Game_State state) { boardGameState = state; }
-
-    void Set_White_Pawn(const U64 bitboard) {
-        whitePawn = bitboard;
-        whitePieceArray[PAWN] = bitboard;
-        Update_Combined_Bitboards();
-    }
-    void Set_White_Knight(const U64 bitboard) {
-        whiteKnight = bitboard;
-        whitePieceArray[KNIGHT] = bitboard;
-        Update_Combined_Bitboards();
-    }
-    void Set_White_Bishop(const U64 bitboard) {
-        whiteBishop = bitboard;
-        whitePieceArray[BISHOP] = bitboard;
-        Update_Combined_Bitboards();
-    }
-    void Set_White_Rook(const U64 bitboard) {
-        whiteRook = bitboard;
-        whitePieceArray[ROOK] = bitboard;
-        Update_Combined_Bitboards();
-    }
-    void Set_White_Queen(const U64 bitboard) {
-        whiteQueen = bitboard;
-        whitePieceArray[QUEEN] = bitboard;
-        Update_Combined_Bitboards();
-    }
-    void Set_White_King(const U64 bitboard) {
-        whiteKing = bitboard;
-        whitePieceArray[KING] = bitboard;
-        Update_Combined_Bitboards();
-    }
-
-    void Set_Black_Pawn(const U64 bitboard) {
-        blackPawn = bitboard;
-        blackPieceArray[PAWN] = bitboard;
-        Update_Combined_Bitboards();
-    }
-    void Set_Black_Knight(const U64 bitboard) {
-        blackKnight = bitboard;
-        blackPieceArray[KNIGHT] = bitboard;
-        Update_Combined_Bitboards();
-    }
-    void Set_Black_Bishop(const U64 bitboard) {
-        blackBishop = bitboard;
-        blackPieceArray[BISHOP] = bitboard;
-        Update_Combined_Bitboards();
-    }
-    void Set_Black_Rook(const U64 bitboard) {
-        blackRook = bitboard;
-        blackPieceArray[ROOK] = bitboard;
-        Update_Combined_Bitboards();
-    }
-    void Set_Black_Queen(const U64 bitboard) {
-        blackQueen = bitboard;
-        blackPieceArray[QUEEN] = bitboard;
-        Update_Combined_Bitboards();
-    }
-    void Set_Black_King(const U64 bitboard) {
-        blackKing = bitboard;
-        blackPieceArray[KING] = bitboard;
-        Update_Combined_Bitboards();
-    }
-
-
-    void Set_Piece_Bitboard(const PieceType piece, const PieceColour colour, const U64 bitboard) {
-        if(colour == WHITE) {
-            switch(piece) {
-                case PAWN:
-                    Set_White_Pawn(bitboard);
-                    break;
-                case ROOK:
-                    Set_White_Rook(bitboard);
-                    break;
-                case KNIGHT:
-                    Set_White_Knight(bitboard);
-                    break;
-                case BISHOP:
-                    Set_White_Bishop(bitboard);
-                    break;
-                case QUEEN:
-                    Set_White_Queen(bitboard);
-                    break;
-                case KING:
-                    Set_White_King(bitboard);
-                    break;
-                default:
-                    break;
-            }
-        } else {
-            switch(piece) {
-                case PAWN:
-                    Set_Black_Pawn(bitboard);
-                    break;
-                case ROOK:
-                    Set_Black_Rook(bitboard);
-                    break;
-                case KNIGHT:
-                    Set_Black_Knight(bitboard);
-                    break;
-                case BISHOP:
-                    Set_Black_Bishop(bitboard);
-                    break;
-                case QUEEN:
-                    Set_Black_Queen(bitboard);
-                    break;
-                case KING:
-                    Set_Black_King(bitboard);
-                    break;
-                default:
+                    blackQueenRook = 1ULL << a8;
                     break;
             }
         }
+
+        Update_Combined_Bitboards(false);
     }
 
-    [[nodiscard]] U64 Get_Piece_Bitboard(const PieceType piece, const PieceColour colour) const {
-        if(colour == WHITE) {
-            switch(piece) {
-                case PAWN: return Get_White_Pawn();
-                case ROOK: return Get_White_Rook();
-                case KNIGHT: return Get_White_Knight();
-                case BISHOP: return Get_White_Bishop();
-                case QUEEN: return Get_White_Queen();
-                case KING: return Get_White_King();
-                default: return 0ULL;
-            }
-        }
-        switch(piece) {
-            case PAWN: return Get_Black_Pawn();
-            case ROOK: return Get_Black_Rook();
-            case KNIGHT: return Get_Black_Knight();
-            case BISHOP: return Get_Black_Bishop();
-            case QUEEN: return Get_Black_Queen();
-            case KING: return Get_Black_King();
-            default: return 0ULL;
-        }
+    static void Print_Move_Details(const Move& move) {
+        std::cout << "\nMove Details:\n"
+                  << "From: " << Square_To_String(move.Get_From())
+                  << " To: " << Square_To_String(move.Get_To())
+                  << "\nPiece: " << (move.Get_Colour() == WHITE ? "White " : "Black ") << Get_Piece_Name(move.Get_Piece_Type());
 
+        if(move.Is_Capture()) std::cout << "\nCaptures: " << Get_Piece_Name(move.Get_Captured_Piece());
+        if(move.Is_Castling()) std::cout << "\nCastling: " << (move.Get_Castle_Side() ? "Kingside" : "Queenside");
+        if(move.Is_En_Passant()) std::cout << "\nEn Passant Capture";
+        if(move.Get_Promotion_Piece() != NO_PIECE) std::cout << "\nPromotion to: " << Get_Piece_Name(move.Get_Promotion_Piece());
+        std::cout << "\n";
     }
 
     void Print_Detailed_Board()  const {
@@ -530,6 +500,4 @@ public:
         std::cout << "   a b c d e f g h" << std::endl;
         std::cout << std::endl;
     }
-
-
 };

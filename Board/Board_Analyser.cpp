@@ -23,7 +23,6 @@ namespace Board_Analyser {
 
         const U64 occupancy = board.Get_All_Pieces();
 
-        board.Print_Detailed_Board();
         const U64 rookAttacks = Tables::Get_Rook_Moves(square, occupancy);
         if (rookAttacks & (board.Get_Piece_Bitboard(ROOK, attackerColour))) {
             return Get_Square(rookAttacks & board.Get_Piece_Bitboard(ROOK, attackerColour));
@@ -42,33 +41,6 @@ namespace Board_Analyser {
         return -1;
     }
 
-    bool Set_Piece_Bitboard(Board& board, const PieceType piece, const PieceColour colour, const U64 bitboard) {
-        if (piece == NO_PIECE) return false;
-
-        if(colour == WHITE) {
-            switch(piece) {
-                case PAWN: board.Set_White_Pawn(bitboard); break;
-                case ROOK: board.Set_White_Rook(bitboard); break;
-                case KNIGHT: board.Set_White_Knight(bitboard); break;
-                case BISHOP: board.Set_White_Bishop(bitboard); break;
-                case QUEEN: board.Set_White_Queen(bitboard); break;
-                case KING: board.Set_White_King(bitboard); break;
-                default: return false;
-            }
-        } else {
-            switch(piece) {
-                case PAWN: board.Set_Black_Pawn(bitboard); break;
-                case ROOK: board.Set_Black_Rook(bitboard); break;
-                case KNIGHT: board.Set_Black_Knight(bitboard); break;
-                case BISHOP: board.Set_Black_Bishop(bitboard); break;
-                case QUEEN: board.Set_Black_Queen(bitboard); break;
-                case KING: board.Set_Black_King(bitboard); break;
-                default: return false;
-            }
-        }
-
-        return true;
-    }
 
     int Is_King_In_Check(const U64 kingBit, const PieceColour colour, const Board& board) {
         const int kingSquare = Get_LS1B_Index(kingBit);
@@ -93,7 +65,7 @@ namespace Board_Analyser {
          const U64 kingBB = board.Get_Piece_Bitboard(KING, colour);
          const int kingSquare = Get_Square(kingBB);
          const int attackerSquare = Is_King_In_Check(kingBB, colour, board);
-         if (attackerSquare == -1){return false;}
+         if (attackerSquare == -1){ return false; }
 
          const U64 legalMoves = MoveGeneration::Get_Legal_Moves(kingSquare,
                                                                 colour,
@@ -139,24 +111,18 @@ namespace Board_Analyser {
                                    (move.Get_To() - 1) :
                                    (move.Get_To() + 1);
 
-        U64 rookBitboard = board.Get_Piece_Bitboard(ROOK, colour);
+        U64 rookBitboard = board.Get_Piece_Bitboard(ROOK, colour, move.Get_Moved_Rook());
         rookBitboard = Remove_Bit(rookBitboard, rookSquare);
         rookBitboard = Set_Bit(rookBitboard, rookDestination);
-        Set_Piece_Bitboard(board, ROOK, colour, rookBitboard);
+        board.Set_Piece_Bitboard(ROOK, colour, rookBitboard, isKingSide);
 
         U64 kingBitboard = board.Get_Piece_Bitboard(KING, colour);
         kingBitboard = Remove_Bit(kingBitboard, move.Get_From());
         kingBitboard = Set_Bit(kingBitboard, move.Get_To());
-        Set_Piece_Bitboard(board, KING, colour, kingBitboard);
+        board.Set_Piece_Bitboard(KING, colour, kingBitboard);
 
-        if(colour == WHITE) {
-            board.castlingRights.whiteKingSideRookMoves = 9999;
-            board.castlingRights.whiteQueenSideRookMoves = 9999;
-        }
-        else {
-            board.castlingRights.blackKingSideRookMoves = 9999;
-            board.castlingRights.blackQueenSideRookMoves = 9999;
-        }
+
+        board.Set_Castling_Flag(colour, false);
 
         move.Set_Castling(true);
         move.Set_King_Side_Castle(isKingSide);
@@ -181,19 +147,12 @@ namespace Board_Analyser {
             (isKingSide ? h1 : a1) :
             (isKingSide ? h8 : a8);
 
-        if(colour == WHITE) {
-            if(isKingSide && !board.Has_White_King_Side_Castling_Rights()) { return false; }
-            if(!isKingSide && !board.Has_White_Queen_Side_Castling_Rights()) { return false; }
-        }
-        else {
-            if(isKingSide && !board.Has_Black_King_Side_Castling_Rights()) { return false; }
-            if(!isKingSide && !board.Has_Black_Queen_Side_Castling_Rights()) { return false; }
-        }
+        if (!board.Has_Castling_Rights(colour, isKingSide)) { return false; }
 
         if(!(board.Get_Piece_Bitboard(ROOK, colour) & (1ULL << rookSquare))) { return false; }
 
         const U64 occupancy = board.Get_All_Pieces();
-        const U64 betweenSquares = Board::Get_Castling_Path(colour, isKingSide);
+        const U64 betweenSquares = board.Get_Castling_Path(colour, isKingSide);
         if(betweenSquares & occupancy) { return false; }
 
         const int square1 = move.Get_From() + (isKingSide ? 1 : -1);
@@ -234,17 +193,17 @@ namespace Board_Analyser {
 
         U64 newPieceBitboard = board.Get_Piece_Bitboard(promotionPiece, move.Get_Colour());
         newPieceBitboard = Set_Bit(newPieceBitboard, move.Get_To());
-        Set_Piece_Bitboard(board, promotionPiece, move.Get_Colour(), newPieceBitboard);
+        board.Set_Piece_Bitboard(promotionPiece, move.Get_Colour(), newPieceBitboard);
 
         // Remove the pawn
         U64 pawnBitboard = board.Get_Piece_Bitboard(PAWN, move.Get_Colour());
         pawnBitboard = Remove_Bit(pawnBitboard, move.Get_From());
-        Set_Piece_Bitboard(board, PAWN, move.Get_Colour(), pawnBitboard);
+        board.Set_Piece_Bitboard( PAWN, move.Get_Colour(), pawnBitboard);
 
         move.Set_Promotion_Piece(promotionPiece);
     }
 
-    void Move_Piece(Move& move, Board& board) {
+    void Move_Piece(const Move & move, Board& board) {
         board.currentTurn = board.currentTurn == WHITE ? BLACK : WHITE;
         PieceType piece = move.Get_Piece_Type();
         if (move.Get_Promotion_Piece() != NO_PIECE){ piece = move.Get_Promotion_Piece(); }
@@ -252,48 +211,22 @@ namespace Board_Analyser {
         U64 pieceBitboard = board.Get_Piece_Bitboard(piece, move.Get_Colour());
         pieceBitboard = Remove_Bit(pieceBitboard, move.Get_From());
         pieceBitboard = Set_Bit(pieceBitboard, move.Get_To());
-        Set_Piece_Bitboard(board, piece, move.Get_Colour(), pieceBitboard);
 
-        if (piece == ROOK) {
-            if (move.Get_From() == a1 && board.Has_White_Queen_Side_Castling_Rights()) {
-                move.Set_Moved_Rook(WHITE_QUEEN_SIDE);
-                board.Increment_White_Queen_Side_Rook_Moves();
-            }
-            else if (move.Get_From() == h1 && board.Has_White_King_Side_Castling_Rights()) {
-                move.Set_Moved_Rook(WHITE_KING_SIDE);
-                board.Increment_White_King_Side_Rook_Moves();
-            }
-            else if (move.Get_From() == a8 && board.Has_Black_Queen_Side_Castling_Rights()) {
-                move.Set_Moved_Rook(BLACK_QUEEN_SIDE);
-                board.Increment_Black_Queen_Side_Rook_Moves();
-            }
-            else if (move.Get_From() == h8 && board.Has_Black_King_Side_Castling_Rights()) {
-                move.Set_Moved_Rook(BLACK_KING_SIDE);
-                board.Increment_Black_King_Side_Rook_Moves();
-            }
-            return;
-        }
+        board.Set_Piece_Bitboard(piece, move.Get_Colour(), pieceBitboard);
 
-        if (piece == KING) {
-            if (move.Get_Piece_Type() == KING && abs(move.Get_To() - move.Get_From()) == 2) {
-                if (move.Get_Colour() == WHITE) {
-                    board.castlingRights.whiteKingSideRookMoves = 9999;
-                    board.castlingRights.whiteQueenSideRookMoves = 9999;
-                    return;
-                }
-                board.castlingRights.blackKingSideRookMoves = 9999;
-                board.castlingRights.blackQueenSideRookMoves = 9999;
-            }
-            else {
-                if (move.Get_Colour() == WHITE) {
-                    board.Increment_White_King_Side_Rook_Moves();
-                    board.Increment_White_Queen_Side_Rook_Moves();
-                    return;
-                }
-                board.Increment_Black_King_Side_Rook_Moves();
-                board.Increment_Black_Queen_Side_Rook_Moves();
-            }
+        if (piece == ROOK || piece == KING) { Update_Castling_Rights(move, board); }
+
+        board.moveHistory.push_back(move);
+    }
+
+    void Update_Castling_Rights(const Move & move, Board& board) {
+        const PieceType piece = move.Get_Piece_Type();
+
+        if (piece == KING && abs(move.Get_To() - move.Get_From()) == 2) {
+            board.Set_Castling_Flag(move.Get_Colour(), false);
         }
+        else { board.Adjust_Castling_Flags(move, false); }
+
     }
 
     bool Can_Promote(const Move& move) {
@@ -314,15 +247,13 @@ namespace Board_Analyser {
         move.Set_Capture(true);
 
         for(const PieceType piece : {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING}) {
-
-            if(destinationBit & board.Get_Piece_Bitboard(piece, enemyColour)) {
+            U64 newBitboard = board.Get_Piece_Bitboard(piece, enemyColour);
+            if(destinationBit & newBitboard) {
 
                 move.Set_Captured_Piece(piece);
                 move.Set_Capture_Destination(move.Get_To());
-
-                U64 newBitboard = board.Get_Piece_Bitboard(piece, enemyColour);
                 newBitboard = Remove_Bit(newBitboard, move.Get_To());
-                Set_Piece_Bitboard(board, piece, enemyColour, newBitboard);
+                board.Set_Piece_Bitboard(piece, enemyColour, newBitboard);
                 break;
             }
         }
@@ -365,7 +296,7 @@ namespace Board_Analyser {
         enemyPawnBB = Remove_Bit(enemyPawnBB, (bitToRemove + move.Get_To()));
 
         move.Set_Capture_Destination(static_cast<Squares>(bitToRemove + move.Get_To()));
-        Set_Piece_Bitboard(board, PAWN, enemyColour, enemyPawnBB);
+        board.Set_Piece_Bitboard(PAWN, enemyColour, enemyPawnBB);
 
         move.Set_En_Passant(true);
         move.Set_Capture(true);
@@ -420,19 +351,20 @@ namespace Board_Analyser {
         if (pieceDestination & enemyPieces){ Handle_Captures(move, board); }
 
         Move_Piece(move, board);
+        // board.moveHistory.push_back(move);
 
         Is_Checkmate(enemyColour, board);
         Is_Fifty_Move_Draw(board);
 
         Update_Half_Clock(move, board);
-        board.moveHistory.push_back(move);
         return true;
     }
 
     void Update_Half_Clock(const Move &move, Board &board) {
-        if(move.Get_Piece_Type() == PAWN || move.Is_Capture()){ board.Set_Reset_Half_Clock(); }
-
-        else {board.Set_Increment_Half_Clock();}
+        if(move.Get_Piece_Type() == PAWN || move.Is_Capture()) {
+            board.Adjust_Half_Clock(std::nullopt, true);
+        }
+        else { board.Adjust_Half_Clock(true); }
 
     }
 

@@ -13,6 +13,7 @@ namespace Board_Analyser {
 
     bool Handle_Castling(Move& move, Board& board);
     bool Can_Castle(const Move &move, const Board &board);
+    void Update_Castling_Rights(const Move & move, Board& board);
 
     bool Can_Promote(const Move& move);
     void Promote_Pawn(Move& move, PieceType promotionPiece, Board& board);
@@ -22,7 +23,7 @@ namespace Board_Analyser {
 
     void Handle_Captures(Move& move, Board& board);
     bool Make_Move(Move& move, bool moveGeneration, Board& board);
-    void Move_Piece(Move& move, Board& board);
+    void Move_Piece(const Move & move, Board& board);
 
     bool Is_Insufficient_Material(const Board& board);
     bool Is_Light_Square_Bishop(U64 bishopBitboard);
