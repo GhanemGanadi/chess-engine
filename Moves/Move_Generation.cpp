@@ -53,22 +53,19 @@ U64 MoveGeneration::Generate_Pawn_Attacks(const int square, const PieceColour co
 
 U64 MoveGeneration::Generate_Pawn_En_Passant(const int square, const PieceColour colour, const Board& board) {
     U64 moves = 0ULL;
-    if(board.moveHistory.empty()) return moves;
-
+    if(board.moveHistory.empty()) { return moves; }
     const Move& previousMove = board.moveHistory.back();
 
     if(previousMove.Get_Piece_Type() != PAWN ||
-       (abs(previousMove.Get_To() - previousMove.Get_From())) != 16) {
-        return false;
-    }
+       (abs(previousMove.Get_To() - previousMove.Get_From())) != 16) { return false; }
 
     const int fromRank = square / 8;
-    if(colour == WHITE && fromRank != 3) return moves;
-    if(colour == BLACK && fromRank != 4) return moves;
+    if(colour == WHITE && fromRank != 3) { return moves; }
+    if(colour == BLACK && fromRank != 4) { return moves; }
 
     const int moveFile = square % 8;
     const int captureFile = previousMove.Get_To() % 8;
-    if(abs(moveFile - captureFile) != 1) return moves;
+    if(abs(moveFile - captureFile) != 1) { return moves; }
 
     const int captureSquare = previousMove.Get_To() + (colour == WHITE ? -8 : 8);
     moves |= 1ULL << captureSquare;
@@ -77,7 +74,8 @@ U64 MoveGeneration::Generate_Pawn_En_Passant(const int square, const PieceColour
 }
 
 [[nodiscard]] U64 MoveGeneration::Get_Pseudo_Legal_Moves(const int square, const PieceColour colour,
-                                                        const PieceType pieceType, const Board& board) {
+                                                         const PieceType pieceType, const Board& board) {
+
 
     const U64 friendlyPieces = colour == WHITE ? board.Get_White_Pieces() : board.Get_Black_Pieces();
     const U64 enemyPieces = colour == WHITE ? board.Get_Black_Pieces() : board.Get_White_Pieces();
@@ -86,8 +84,8 @@ U64 MoveGeneration::Generate_Pawn_En_Passant(const int square, const PieceColour
     switch(pieceType) {
         case PAWN: {
             U64 pawnMoves = Get_Pawn_Moves(square, colour);
-            const U64 singlePush = (1ULL << (square + (colour == WHITE ? -8 : 8)));
-            const U64 doublePush = (1ULL << (square + (colour == WHITE ? -16 : 16)));
+            const U64 singlePush = 1ULL << (square + (colour == WHITE ? -8 : 8));
+            const U64 doublePush = 1ULL << (square + (colour == WHITE ? -16 : 16));
             if (singlePush & occupancy) {
                 pawnMoves &= ~singlePush;
                 pawnMoves &= ~doublePush;
@@ -117,47 +115,41 @@ U64 MoveGeneration::Generate_Pawn_En_Passant(const int square, const PieceColour
     }
 }
 
-    bool Make_Move_For_Filter(Move& move, Board& board) {
-        const PieceType pieceType = move.Get_Piece_Type();
-        const PieceColour pieceColour = move.Get_Colour();
+bool Make_Move_For_Filter(Move& move, Board& board) {
+    const PieceType pieceType = move.Get_Piece_Type();
+    const PieceColour pieceColour = move.Get_Colour();
 
-        if (pieceType == NO_PIECE){ return false; }
+    if (pieceType == NO_PIECE){ return false; }
 
-        const U64 pieceLocation = 1ULL << move.Get_From();
-        const U64 pieceDestination = 1ULL << move.Get_To();
-        const U64 pieceBB = board.Get_Piece_Bitboard(pieceType, pieceColour);
+    const U64 pieceLocation = 1ULL << move.Get_From();
+    const U64 pieceDestination = 1ULL << move.Get_To();
+    const U64 pieceBB = board.Get_Piece_Bitboard(pieceType, pieceColour);
 
-        if (!(pieceBB & pieceLocation)){ return false; }
+    if (!(pieceBB & pieceLocation)){ return false; }
 
-
-        if (pieceType == PAWN) {
-            Board_Analyser::Handle_En_Passant(move, board);
-            if (Board_Analyser::Can_Promote(move)) {
-                Board_Analyser::Promote_Pawn(move, move.Get_Promotion_Piece(), board);
-            }
+    if (pieceType == PAWN) {
+        Board_Analyser::Handle_En_Passant(move, board);
+        if (Board_Analyser::Can_Promote(move)) {
+            Board_Analyser::Promote_Pawn(move, move.Get_Promotion_Piece(), board);
         }
-
-        else if (pieceType == KING) {
-            if (abs(move.Get_To() - move.Get_From()) == 2) {
-                if (Board_Analyser::Handle_Castling(move, board)) {
-                    board.currentTurn = board.currentTurn == WHITE ? BLACK : WHITE;
-                    return true;
-                }
-                return false;
-            }
-        }
-
-
-        const U64 enemyPieces = pieceColour == WHITE ? board.Get_Black_Pieces() : board.Get_White_Pieces();
-
-        if (pieceDestination & enemyPieces) {
-            Board_Analyser::Handle_Captures(move, board);
-        }
-
-        Board_Analyser::Move_Piece(move, board);
-
-        return true;
     }
+
+    else if (pieceType == KING) {
+        if (abs(move.Get_To() - move.Get_From()) == 2) {
+            if (Board_Analyser::Handle_Castling(move, board)) {
+                board.currentTurn = board.currentTurn == WHITE ? BLACK : WHITE;
+                return true;
+            }
+            return false;
+        }
+    }
+
+    const U64 enemyPieces = pieceColour == WHITE ? board.Get_Black_Pieces() : board.Get_White_Pieces();
+    if (pieceDestination & enemyPieces) { Board_Analyser::Handle_Captures(move, board); }
+    Board_Analyser::Move_Piece(move, board);
+
+    return true;
+}
 
 U64 MoveGeneration::Filter_Legal_Moves(U64 moves, const int square, const PieceColour colour,
                                         const PieceType pieceType, Board& board) {
@@ -165,26 +157,25 @@ U64 MoveGeneration::Filter_Legal_Moves(U64 moves, const int square, const PieceC
     U64 legalMoves = 0ULL;
 
     while(moves) {
+
         const int moveSquare = Get_LS1B_Index(moves);
         moves &= moves - 1;
-
         Move tempMove(static_cast<Squares>(square), static_cast<Squares>(moveSquare), pieceType, colour);
 
         if (pieceType == ROOK) {
-            if (1ULL << square & board.whiteKingRook) { tempMove.Set_Moved_Rook(WHITE_KING_SIDE); }
-            else if (1ULL << square & board.whiteQueenRook) { tempMove.Set_Moved_Rook(WHITE_QUEEN_SIDE); }
-            else if (1ULL << square & board.blackKingRook) { tempMove.Set_Moved_Rook(BLACK_KING_SIDE); }
-            else if (1ULL << square & board.blackQueenRook) { tempMove.Set_Moved_Rook(BLACK_QUEEN_SIDE); }
+            if ((1ULL << square & board.whiteKingRook) ||
+                (1ULL << square & board.blackKingRook)) { tempMove.Set_King_Side_Castle(true); }
+
+            else if ((1ULL << square & board.whiteQueenRook) ||
+                     (1ULL << square & board.blackQueenRook)) { tempMove.Set_King_Side_Castle(false); }
         }
 
         if (Make_Move_For_Filter(tempMove, board)) {
             if(Board_Analyser::Is_King_In_Check(board.Get_Piece_Bitboard(KING, colour), colour, board) == -1) {
                 legalMoves |= (1ULL << moveSquare);
             }
-
             board.Undo_Move(true);
         }
-        // board.moveHistory.push_back(tempMove);
     }
     return legalMoves;
 }
@@ -198,8 +189,8 @@ U64 MoveGeneration::Get_Legal_Moves(const int square, const PieceColour colour, 
 
 Move MoveGeneration::Detect_Capture(Move& move, const Board& board) {
     const PieceColour colour = move.Get_Colour();
-    const U64 pieceLocation = board.Get_Piece_Bitboard(move.Get_Piece_Type(), colour);
     const PieceColour enemyColour = colour == WHITE ? BLACK : WHITE;
+    const U64 pieceLocation = board.Get_Piece_Bitboard(move.Get_Piece_Type(), colour);
     const U64 enemyPieces = colour == WHITE ? board.Get_Black_Pieces() : board.Get_White_Pieces();
 
     if(pieceLocation & enemyPieces) {
@@ -218,64 +209,58 @@ Move MoveGeneration::Detect_Capture(Move& move, const Board& board) {
 [[nodiscard]] U64 MoveGeneration::Get_King_Castle_Moves(const PieceColour colour, const Board& board) {
     U64 moves = 0ULL;
     const U64 occupancy = board.Get_All_Pieces();
+
     if(colour == WHITE) {
         if(board.Has_White_King_Side_Castling_Rights()) {
             constexpr U64 kingSideMask = 1ULL << f1 | 1ULL << g1;
-            if (!(occupancy & kingSideMask)) {
-                moves |= 1ULL << g1;
-            }
+            if (!(occupancy & kingSideMask)) { moves |= 1ULL << g1; }
         }
+
         if(board.Has_White_Queen_Side_Castling_Rights()) {
             constexpr U64 queenSideMask = 1ULL << c1 | 1ULL << d1;
-            if (!(occupancy & queenSideMask)) {
-                moves |= 1ULL << c1;
-            }
+            if (!(occupancy & queenSideMask)) { moves |= 1ULL << c1; }
         }
     }
     else {
         if(board.Has_Black_King_Side_Castling_Rights()) {
             constexpr U64 kingSideMask = 1ULL << f8 | 1ULL << g8;
-            if (!(occupancy & kingSideMask)) {
-                moves |= 1ULL << g8;
-            }
+            if (!(occupancy & kingSideMask)) { moves |= 1ULL << g8; }
         }
+
         if(board.Has_Black_Queen_Side_Castling_Rights()) {
             constexpr U64 queenSideMask = 1ULL << c8 | 1ULL << d8;
-            if (!(occupancy & queenSideMask)) {
-                moves |= 1ULL << c8;
-            }
+            if (!(occupancy & queenSideMask)) { moves |= 1ULL << c8; }
         }
     }
-
     return moves;
 }
-[[nodiscard]] U64 MoveGeneration::Get_Knight_Moves(const int square) {return knightMoves[square];}
-[[nodiscard]] U64 MoveGeneration::Get_Pawn_Moves(const int square, const PieceColour colour){return pawnMoves[colour == WHITE ? 0 : 1][square];}
-[[nodiscard]] U64 MoveGeneration::Get_Pawn_Attacks(const int square, const PieceColour colour) {return pawnAttacks[colour == WHITE ? 0 : 1][square];
-}
+
+[[nodiscard]] U64 MoveGeneration::Get_Knight_Moves(const int square) { return knightMoves[square]; }
+[[nodiscard]] U64 MoveGeneration::Get_Pawn_Moves(const int square, const PieceColour colour){ return pawnMoves[colour == WHITE ? 0 : 1][square]; }
+[[nodiscard]] U64 MoveGeneration::Get_Pawn_Attacks(const int square, const PieceColour colour) { return pawnAttacks[colour == WHITE ? 0 : 1][square]; }
 
 std::vector<Move> MoveGeneration::Generate_All_Moves(const PieceColour colour, Board& board) {
     std::vector<Move> allMoves;
-
     for(const PieceType piece : {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING}) {
         U64 pieceBB = board.Get_Piece_Bitboard(piece, colour);
-
+        Print_Bitboard(pieceBB);
         while(pieceBB) {
             const int from = Get_LS1B_Index(pieceBB);
             pieceBB &= (pieceBB - 1);
-
+            Print_Bitboard(1ULL << from);
+            board.Print_Detailed_Board();
             U64 legalMoves = Get_Legal_Moves(from, colour, piece, board);
-
             while(legalMoves) {
                 const int to = Get_LS1B_Index(legalMoves);
                 legalMoves &= (legalMoves - 1);
 
                 Move tempMove(static_cast<Squares>(from), static_cast<Squares>(to), piece, colour);
                 if (piece == ROOK) {
-                    if (1ULL << from & board.whiteKingRook) { tempMove.Set_Moved_Rook(WHITE_KING_SIDE); }
-                    else if (1ULL << from & board.whiteQueenRook) { tempMove.Set_Moved_Rook(WHITE_QUEEN_SIDE); }
-                    else if (1ULL << from & board.blackKingRook) { tempMove.Set_Moved_Rook(BLACK_KING_SIDE); }
-                    else if (1ULL << from & board.blackQueenRook) { tempMove.Set_Moved_Rook(BLACK_QUEEN_SIDE); }
+                    if ((1ULL << from & board.whiteKingRook) ||
+                        (1ULL << from & board.blackKingRook)) { tempMove.Set_King_Side_Castle(true); }
+
+                    else if ((1ULL << from & board.whiteQueenRook) ||
+                             (1ULL << from & board.blackQueenRook)) { tempMove.Set_King_Side_Castle(false); }
                 }
 
 
@@ -298,7 +283,6 @@ std::vector<Move> MoveGeneration::Generate_All_Moves(const PieceColour colour, B
 
                 if (Board_Analyser::Make_Move(tempMove, true, board)) {
                     board.Undo_Move(true);
-                    // Board_Analyser::Set_Move_Flags(tempMove, board);
                     allMoves.push_back(tempMove);
                 }
             }

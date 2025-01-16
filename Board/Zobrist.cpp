@@ -91,10 +91,13 @@ U64 Zobrist::Zobrist_Make_Move(const Move& move, U64 hash) const {
 
 
         const int rookIndex = Get_Piece_Index(move.Get_Colour(), ROOK);
-        const int rookFromSquare = move.Get_Castle_Side() ? (move.Get_Colour() == WHITE ? h1 : h8) :
+        const int rookFromSquare = move.Get_Castle_Side() == Castle_Side::King_Side ?
+                                                            (move.Get_Colour() == WHITE ? h1 : h8) :
                                                             (move.Get_Colour() == WHITE ? a1 : a8);
-        const int rookToSquare = move.Get_Castle_Side() ? (move.Get_Colour() == WHITE ? f1 : f8) :
-                                                          (move.Get_Colour() == WHITE ? d1 : d8);
+
+        const int rookToSquare = move.Get_Castle_Side() == Castle_Side::King_Side ?
+                                                            (move.Get_Colour() == WHITE ? f1 : f8) :
+                                                            (move.Get_Colour() == WHITE ? d1 : d8);
 
         hash ^= Piece_Square[rookIndex][rookFromSquare];
         hash ^= Piece_Square[rookIndex][rookToSquare];

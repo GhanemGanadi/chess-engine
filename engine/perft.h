@@ -41,6 +41,7 @@ public:
 
     // Detailed move counting
     void Perft_Divide(Board& board, int depth);
+    void Perft_Divide_Debugging(Board& board, int depth);
 
     // Full statistics
     PerftStats Run_Perft_Stats(Board& board, int depth, PieceColour side);

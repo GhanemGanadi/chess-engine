@@ -2,7 +2,12 @@
 #include "../core/Bitboard_Operations.h"
 
 class Board;
-enum RookType { NOT_ROOK, WHITE_KING_SIDE, WHITE_QUEEN_SIDE, BLACK_KING_SIDE, BLACK_QUEEN_SIDE };
+
+enum class Castle_Side {
+    None,
+    Queen_Side,
+    King_Side,
+};
 
 struct Move {
 private:
@@ -14,11 +19,10 @@ private:
     PieceType capturedPiece;
     int pieceCaptureSquare;
     PieceType promotionPiece;
-    bool kingSideCastle;
+    Castle_Side kingSideCastle;
     bool isCapture;
     bool isCastling;
     bool isEnPassant;
-    RookType movedRook = NOT_ROOK;
 
 
 public:
@@ -34,7 +38,7 @@ public:
         , isCapture(false)
         , isCastling(false)
         , isEnPassant(false)
-        , kingSideCastle(false)
+        , kingSideCastle(Castle_Side::None)
     {}
 
     [[nodiscard]] Squares Get_From() const { return fromSquare; }
@@ -44,11 +48,10 @@ public:
     [[nodiscard]] PieceColour Get_Colour() const { return pieceColour; }
     [[nodiscard]] PieceType Get_Promotion_Piece() const { return promotionPiece; }
     [[nodiscard]] PieceType Get_Captured_Piece() const { return capturedPiece; }
-    [[nodiscard]] bool Get_Castle_Side() const { return kingSideCastle; }
+    [[nodiscard]] Castle_Side Get_Castle_Side() const { return kingSideCastle; }
     [[nodiscard]] bool Is_Capture() const { return isCapture; }
     [[nodiscard]] bool Is_Castling() const { return isCastling; }
     [[nodiscard]] bool Is_En_Passant() const { return isEnPassant; }
-    [[nodiscard]] RookType Get_Moved_Rook() const { return movedRook; }
 
     // Setters
     void Set_Promotion_Piece(const PieceType piece) { promotionPiece = piece; }
@@ -60,8 +63,9 @@ public:
     void Set_To(const Squares to) { toSquare = to; }
     void Set_Piece_Type(const PieceType piece) { pieceType = piece; }
     void Set_Captured_Piece(const PieceType piece) { capturedPiece = piece; }
-    void Set_King_Side_Castle(const bool castle){ kingSideCastle = castle; }
-    void Set_Moved_Rook(const RookType rook) { movedRook = rook; }
+    void Set_King_Side_Castle(const bool castle){ kingSideCastle = castle ? Castle_Side::King_Side :
+                                                                            Castle_Side::Queen_Side; }
+
 
 };
 namespace Move_Parsing {

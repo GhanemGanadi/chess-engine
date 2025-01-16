@@ -6,7 +6,7 @@
 
 namespace Move_Parsing {
 
-    Move Parse_Move(const std::string& input, const PieceColour colour, Board& board) {
+    Move Parse_Move(const std::string& input, const PieceColour colour, const Board& board) {
         Move userMove = Move(a8,a8, NO_PIECE, colour);
         const std::string fromSquare = input.substr(0, 2);
         const std::string toSquare = input.substr(2, 2);
@@ -22,10 +22,10 @@ namespace Move_Parsing {
         userMove.Set_Piece_Type(piece);
 
         if (piece == ROOK) {
-            if (1ULL << from & board.whiteKingRook) { userMove.Set_Moved_Rook(WHITE_KING_SIDE); }
-            else if (1ULL << from & board.whiteQueenRook) { userMove.Set_Moved_Rook(WHITE_QUEEN_SIDE); }
-            else if (1ULL << from & board.blackKingRook) { userMove.Set_Moved_Rook(BLACK_KING_SIDE); }
-            else if (1ULL << from & board.blackQueenRook) { userMove.Set_Moved_Rook(BLACK_QUEEN_SIDE); }
+            if ((1ULL << from & board.whiteKingRook) ||
+                (1ULL << from & board.blackKingRook)) { userMove.Set_King_Side_Castle(true); }
+
+            else { userMove.Set_King_Side_Castle(false); }
         }
 
         return userMove;
