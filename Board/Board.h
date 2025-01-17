@@ -121,7 +121,7 @@ public:
 
         U64 promotedPieceBB = Get_Piece_Bitboard(promotedPieceType, colour);
         promotedPieceBB = Remove_Bit(promotedPieceBB, move.Get_To());
-        Set_Piece_Bitboard(promotedPieceType, colour, promotedPieceBB);
+        Set_Piece_Bitboard(promotedPieceType, colour, promotedPieceBB, move.Get_Castle_Side());
     }
 
     void Reverse_Capture(const Move &move) {
@@ -135,11 +135,10 @@ public:
         Set_Piece_Bitboard(capturedPiece, enemyColour, capturedPieceBB);
     }
 
-    void Set_Piece_Bitboard(const PieceType piece, const PieceColour colour, const U64 bitboard,
+    void Set_Piece_Bitboard(const PieceType piece, const PieceColour colour, U64 bitboard,
                             const std::optional<Castle_Side> kingSide=std::nullopt) {
         if(colour == WHITE) {
             switch(piece) {
-
                 case PAWN: {
                     whitePawn = bitboard;
                     whitePieceArray[PAWN] = bitboard;
@@ -157,12 +156,20 @@ public:
                 }
                 case ROOK: {
                     if (kingSide.has_value()) {
-                        if (kingSide == Castle_Side::King_Side) {whiteKingRook = bitboard; }
-                        else if (kingSide == Castle_Side::Queen_Side) {whiteQueenRook = bitboard; }
-                        else {whiteRook = bitboard; }
+                        if (kingSide == Castle_Side::King_Side) {
+                            whiteRook ^= whiteKingRook;
+                            whiteKingRook = bitboard;
+                            whiteRook |= whiteKingRook;
+                        }
+                        else if (kingSide == Castle_Side::Queen_Side) {
+                            whiteRook ^= whiteQueenRook;
+                            whiteQueenRook = bitboard;
+                            whiteRook |= whiteQueenRook;
+                        }
+                        else { whiteRook = bitboard; }
                     }
-                    whiteRook = bitboard | whiteKingRook | whiteQueenRook;
-                    whitePieceArray[ROOK] = bitboard;
+                    else { whiteRook = bitboard; }
+                    whitePieceArray[ROOK] = whiteRook;
                     break;
                 }
                 case QUEEN: {
@@ -187,17 +194,6 @@ public:
                     blackPieceArray[PAWN] = bitboard;
                     break;
                 }
-                case ROOK: {
-                    if (kingSide.has_value()) {
-                        if (kingSide == Castle_Side::King_Side) {blackKingRook = bitboard;}
-                        else if (kingSide == Castle_Side::Queen_Side) { blackQueenRook = bitboard; }
-                        else { blackRook = bitboard; }
-                    }
-                    blackRook = bitboard | blackKingRook | blackQueenRook;
-                    blackPieceArray[ROOK] = bitboard;
-                    break;
-                }
-
                 case KNIGHT: {
                     blackKnight = bitboard;
                     blackPieceArray[KNIGHT] = bitboard;
@@ -206,6 +202,25 @@ public:
                 case BISHOP: {
                     blackBishop = bitboard;
                     blackPieceArray[BISHOP] = bitboard;
+                    break;
+                }
+                case ROOK: {
+                    if (kingSide.has_value()) {
+                        if (kingSide == Castle_Side::King_Side) {
+                            blackRook ^= blackKingRook;
+                            blackKingRook = bitboard;
+                            blackRook |= blackKingRook;
+                        }
+                        else if (kingSide == Castle_Side::Queen_Side) {
+                            blackRook ^= blackQueenRook;
+                            blackQueenRook = bitboard;
+                            blackRook |= blackQueenRook;
+                        }
+                        else { blackRook = bitboard; }
+
+                    }
+                    else { blackRook = bitboard; }
+                    blackPieceArray[ROOK] = blackRook;
                     break;
                 }
                 case QUEEN: {
@@ -288,7 +303,8 @@ public:
 
     void Adjust_Castling_Flags(const Move & move, const bool reset) {
         const int rights = reset == true ? -1 : 1;
-        if (move.Get_Castle_Side() == Castle_Side::None) { return; }
+        if (move.Get_Castle_Side() == Castle_Side::None && (move.Get_Piece_Type() == ROOK ||
+                                                            move.Get_Promotion_Piece() == ROOK)) { return; }
         if (move.Get_Piece_Type() == KING) {
             auto& kingSide = (move.Get_Colour() == WHITE) ?
                                     castlingRights.whiteKingSideRookMoves :

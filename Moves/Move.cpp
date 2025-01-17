@@ -25,7 +25,10 @@ namespace Move_Parsing {
             if ((1ULL << from & board.whiteKingRook) ||
                 (1ULL << from & board.blackKingRook)) { userMove.Set_King_Side_Castle(true); }
 
-            else { userMove.Set_King_Side_Castle(false); }
+            else {
+                if ((1ULL << from & board.whiteQueenRook) ||
+                    (1ULL << from & board.blackQueenRook)) { userMove.Set_King_Side_Castle(false); }
+            }
         }
 
         return userMove;

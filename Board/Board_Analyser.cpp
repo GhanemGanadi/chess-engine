@@ -199,7 +199,9 @@ namespace Board_Analyser {
 
         board.Set_Piece_Bitboard(piece, move.Get_Colour(), pieceBitboard, move.Get_Castle_Side());
 
-        if (piece == ROOK || piece == KING) { Update_Castling_Rights(move, board); }
+        if (piece == ROOK || piece == KING) {
+            Update_Castling_Rights(move, board);
+        }
 
         board.moveHistory.push_back(move);
     }
@@ -333,7 +335,9 @@ namespace Board_Analyser {
         const PieceColour enemyColour = pieceColour == WHITE ? BLACK : WHITE;
         const U64 enemyPieces = pieceColour == WHITE ? board.Get_Black_Pieces() : board.Get_White_Pieces();
 
-        if (pieceDestination & enemyPieces){ Handle_Captures(move, board); }
+        if (pieceDestination & enemyPieces) {
+            Handle_Captures(move, board);
+        }
 
         Move_Piece(move, board);
 

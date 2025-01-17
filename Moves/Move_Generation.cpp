@@ -243,12 +243,10 @@ std::vector<Move> MoveGeneration::Generate_All_Moves(const PieceColour colour, B
     std::vector<Move> allMoves;
     for(const PieceType piece : {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING}) {
         U64 pieceBB = board.Get_Piece_Bitboard(piece, colour);
-        Print_Bitboard(pieceBB);
+
         while(pieceBB) {
             const int from = Get_LS1B_Index(pieceBB);
             pieceBB &= (pieceBB - 1);
-            Print_Bitboard(1ULL << from);
-            board.Print_Detailed_Board();
             U64 legalMoves = Get_Legal_Moves(from, colour, piece, board);
             while(legalMoves) {
                 const int to = Get_LS1B_Index(legalMoves);

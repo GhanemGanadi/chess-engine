@@ -58,6 +58,7 @@ void Perft::Perft_Divide(Board& board, const int depth) {
     std::vector<Move> allMoves = MoveGeneration::Generate_All_Moves(board.currentTurn, board);
     int totalNodes = 0;
     for (Move& move : allMoves) {
+
         if (Board_Analyser::Make_Move(move, true, board)) {
             int nodes = Run_Perft(board, depth - 1);
             std::cout << Square_To_String(move.Get_From()) << Square_To_String(move.Get_To());
@@ -80,20 +81,24 @@ void Perft::Perft_Divide(Board& board, const int depth) {
     std::cout << "\nTotal nodes: " << totalNodes << "\n";
 }
 
-void Perft::Perft_Divide_Debugging(Board& board, const int depth) {
-    std::vector<Move> allMoves = MoveGeneration::Generate_All_Moves(board.currentTurn, board);
-    MoveGeneration::Display_All_Moves(allMoves);
+void Perft::Perft_Divide_Debugging(Board& board, int depth) {
+    // std::vector<Move> allMoves = MoveGeneration::Generate_All_Moves(board.currentTurn, board);
+    // MoveGeneration::Display_All_Moves(allMoves);
     std::string turnString, input;
 
-    std::cout << turnString;
-    std::cout << "Input your move (or 'undo' to take back last move): ";
-    std::cin >> input;
+    while (depth){
+        board.Print_Detailed_Board();
+        std::cout << turnString;
+        std::cout << "Input your move (or 'undo' to take back last move): ";
+        std::cin >> input;
 
-    Move userMove = Move_Parsing::Parse_Move(input, board.currentTurn, board);
+        Move userMove = Move_Parsing::Parse_Move(input, board.currentTurn, board);
 
-    if (Board_Analyser::Make_Move(userMove, false, board)) {
-        Perft_Divide(board, depth - 1);
-        std::cout << board.Board_To_Fen() << std::endl;
+        if (Board_Analyser::Make_Move(userMove, true, board)) {
+            Perft_Divide(board, depth - 1);
+            std::cout << board.Board_To_Fen() << std::endl;
+        }
+        depth--;
     }
 }
 
