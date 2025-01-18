@@ -18,6 +18,7 @@ core/test.txt
 core/opening-book.txt
 masters.txt
 output.txt
+optimised/
 
 # Compiled files
 *.o

@@ -43,4 +43,12 @@ add_executable(bitboard main.cpp
         Board/Zobrist.cpp
         Board/Zobrist.h
 
+        optimised/core/board.h
+        optimised/core/move.h
+        optimised/core/Declarations.h
+        optimised/Attack_Tables.cpp
+        optimised/Attack_Tables.h
+        optimised/Move_Generator.cpp
+        optimised/Move_Generator.h
+
 )

@@ -414,7 +414,7 @@ public:
         fen += " - " + std::to_string(Half_Clock) + " 1";
 
         return fen;
-}
+    }
 
     void Initialise_From_Fen(const std::string& fen) {
 
