@@ -50,5 +50,7 @@ add_executable(bitboard main.cpp
         optimised/Attack_Tables.h
         optimised/Move_Generator.cpp
         optimised/Move_Generator.h
+        optimised/comparison.h
+        Moves/performance_test.h
 
 )

@@ -19,8 +19,7 @@ class MoveGeneration {
     static U64 Generate_Pawn_Attacks(int square, PieceColour colour);
     static U64 Generate_Pawn_En_Passant(int square, PieceColour colour, const Board& board);
 
-    [[nodiscard]] static U64 Get_Pseudo_Legal_Moves(int square, PieceColour colour, PieceType pieceType,
-                                            const Board& board);
+
 
     static U64 Filter_Legal_Moves(U64 moves, int square, PieceColour colour,
                                  PieceType pieceType, Board& board);
@@ -31,7 +30,9 @@ class MoveGeneration {
 public:
     MoveGeneration();
 
-    // Public interface
+    [[nodiscard]] static U64 Get_Pseudo_Legal_Moves(int square, PieceColour colour, PieceType pieceType,
+                                        const Board& board);
+
     [[nodiscard]] static U64 Get_King_Moves(int square);
     [[nodiscard]] static U64 Get_King_Castle_Moves(PieceColour colour, const Board& board) ;
     [[nodiscard]] static U64 Get_Knight_Moves(int square);

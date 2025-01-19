@@ -5,7 +5,12 @@
 // #include "core/PGN_Parser.h"
 // #include "engine/Evaluation.h"
 // #include "engine/perft.h"
-#include "optimised/attack_tables.h"
+
+// #include "Moves/performance_test.h"
+#include "optimised/comparison.h"
+
+
+// #include "optimised/attack_tables.h"
 
 int main() {
 
@@ -24,7 +29,11 @@ int main() {
     // book.Process_Games(games);
     // book.Save_To_File(OPENING_BOOK_PATH);
 
-    Print_Bitboard(Attack_Tables::Get_Between_Squares(h8 ,a1));
+
+    Performance_Test test;
+
+    test.Piece_Type_Test();
+
 
 
 }
