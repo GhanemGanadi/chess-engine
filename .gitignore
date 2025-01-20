@@ -1,6 +1,7 @@
 # Build directories
 cmake-build-debug/
 cmake-build-release/
+build/
 
 # IDE specific
 .idea/
@@ -12,13 +13,12 @@ CMakeFiles/
 cmake_install.cmake
 
 # Files to avoid pushing
-core/Game_List.txt
-config.h
-core/test.txt
-core/opening-book.txt
+original/core/Game_List.txt
+original/config.h
+original/core/test.txt
+original/core/opening-book.txt
 masters.txt
 output.txt
-optimised/
 
 # Compiled files
 *.o

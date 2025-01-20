@@ -5,13 +5,7 @@
 // #include "core/PGN_Parser.h"
 // #include "engine/Evaluation.h"
 // #include "engine/perft.h"
-
-// #include "Moves/performance_test.h"
-#include "optimised/comparison.h"
-
-
-// #include "optimised/attack_tables.h"
-
+#include "Moves/performance_test.h"
 int main() {
 
     // Board board;
@@ -29,12 +23,8 @@ int main() {
     // book.Process_Games(games);
     // book.Save_To_File(OPENING_BOOK_PATH);
 
-
     Performance_Test test;
-
     test.Piece_Type_Test();
-
-
 
 }
 

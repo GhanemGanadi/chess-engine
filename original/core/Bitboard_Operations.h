@@ -75,7 +75,7 @@ inline int Count_Bits(U64 bitboard) {
     for(int bit = 0; bit < 64; bit++) {
         if(Get_Bit(bitboard, bit)) {
             count++;
-            bitboard = bitboard &= bitboard - 1;
+            bitboard &= bitboard - 1;
         }
     }
     return count;
