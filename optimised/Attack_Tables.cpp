@@ -347,6 +347,7 @@ BB Attack_Tables::Get_Attacks_From_Square(const int square, const PieceColour co
     BB attackers = 0;
     const PieceColour enemy_colour = colour == WHITE ? BLACK : WHITE;
     const BB occupancy = board.Get_All_Pieces();
+    board.Print_Detailed_Board();
 
     BB diagonal_sliders = board.Get_Piece(BISHOP, enemy_colour) | board.Get_Piece(QUEEN, enemy_colour);
     if (diagonal_sliders) {
@@ -368,6 +369,44 @@ BB Attack_Tables::Get_Attacks_From_Square(const int square, const PieceColour co
 
     return attackers;
 }
+
+BB Attack_Tables::Generate_All_Attacks(const PieceColour attacking_colour, const Board &board) {
+    BB attacks = 0ULL;
+    const BB occupancy = board.Get_All_Pieces();
+    const BB friendly_pieces = attacking_colour == WHITE ? board.Get_White_Pieces() : board.Get_Black_Pieces();
+    const BB enemy_pieces = attacking_colour == WHITE ? board.Get_Black_Pieces() : board.Get_White_Pieces();
+
+    BB pawns = board.Get_Piece(PAWN, attacking_colour);
+    while (pawns) {
+        const int square = Get_LSB(pawns);
+        attacks |= Get_Pawn_Attacks(square, attacking_colour, enemy_pieces, board.en_passant_square);
+        pawns &= pawns - 1;
+    }
+
+    BB knights = board.Get_Piece(KNIGHT, attacking_colour);
+    while (knights) {
+        attacks |= Knight_Moves[Get_LSB(knights)];
+        knights &= knights - 1;
+    }
+
+    BB diagonal_sliders = board.Get_Piece(BISHOP, attacking_colour) | board.Get_Piece(QUEEN, attacking_colour);
+    while (diagonal_sliders) {
+        attacks |= Get_Bishop_Moves(Get_LSB(diagonal_sliders), occupancy);
+        diagonal_sliders &= diagonal_sliders - 1;
+    }
+
+    BB orthogonal_sliders = board.Get_Piece(ROOK, attacking_colour) | board.Get_Piece(QUEEN, attacking_colour);
+    while (orthogonal_sliders) {
+        attacks |= Get_Rook_Moves(Get_LSB(orthogonal_sliders), occupancy);
+        orthogonal_sliders &= orthogonal_sliders - 1;
+    }
+
+    const int king_square = Get_LSB(board.Get_Piece(KING, attacking_colour));
+    attacks |= King_Moves[king_square];
+
+    return attacks & ~friendly_pieces;
+}
+
 
 
 

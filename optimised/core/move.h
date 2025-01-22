@@ -9,13 +9,12 @@ class Move {
             U32 to : 6;
             U32 colour : 1;
             U32 piece : 3;
-            U32 is_capture : 2;
             U32 captured_piece : 3;
+            U32 capture_destination : 6;
             U32 promotion_piece : 3;
             U32 castle : 2;
             U32 is_en_passant : 1;
         } bits;
-
         U32 raw;
     };
 
@@ -29,6 +28,7 @@ public:
         bits.to = to;
         bits.piece = piece;
         bits.colour = colour;
+        bits.captured_piece = NO_PIECE;
 
     }
 
@@ -37,7 +37,6 @@ public:
     [[nodiscard]] constexpr int Get_Colour() const { return bits.colour; }
     [[nodiscard]] constexpr int Get_Piece() const { return bits.piece; }
 
-    [[nodiscard]] constexpr bool Is_Capture() const { return bits.is_capture; }
     [[nodiscard]] constexpr int Get_Captured_Piece() const { return bits.captured_piece; }
     [[nodiscard]] constexpr int Get_Promotion_Piece() const { return bits.promotion_piece; }
     [[nodiscard]] constexpr int Get_Castle_Side() const { return bits.castle; }
@@ -50,8 +49,8 @@ public:
     constexpr void Set_Colour(const PieceColour colour) { bits.colour = colour; }
     constexpr void Set_Piece(const PieceType type) { bits.piece = type; }
 
-    constexpr void Set_Capture(const bool capture) {bits.is_capture = capture; }
     constexpr void Set_Captured_Piece(const PieceType type) { bits.promotion_piece = type; }
+    constexpr void Set_Capture_Position(const int square) { bits.capture_destination = square; }
     constexpr void Set_PromotionPiece(const PieceType type) { bits.promotion_piece = type; }
     constexpr void Set_CastleSide(const CastleSide side) { bits.castle = side; }
     constexpr void Set_En_Passant(const bool en_passant) { bits.is_en_passant = en_passant; }

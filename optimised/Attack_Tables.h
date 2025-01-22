@@ -1,5 +1,4 @@
 #pragma once
-#include "core/Declarations.h"
 #include "core/board.h"
 
 
@@ -50,4 +49,5 @@ public:
 
     static BB Get_Between_Squares(int square1, int square2);
     static BB Get_Attacks_From_Square(int square, PieceColour colour, const Board& board);
+    static BB Generate_All_Attacks(PieceColour attacking_colour, const Board& board);
 };

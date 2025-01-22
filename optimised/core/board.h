@@ -130,32 +130,41 @@ class Board {
         }
     }
 
-    template<PieceColour colour, CastleSide side>
-    [[nodiscard]] constexpr bool Can_Castle() const {
+    [[nodiscard]] constexpr BB Get_Castle_Moves(const PieceColour colour, const BB enemy_attacks) const {
+        BB castle_moves = 0ULL;
         const BB occupancy = Get_All_Pieces();
 
         if constexpr (colour == WHITE) {
-            if constexpr (side == KING_SIDE) {
-                if (WHITE_KING_PATH & occupancy) { return false; }
-                if (!(WHITE_KING_ROOK & pieces[ROOK])) { return false;}
-                // implement
-            }
-            if (WHITE_QUEEN_PATH & occupancy) { return false; }
-            if (!(WHITE_QUEEN_ROOK & pieces[ROOK])) { return false; }
-            // implement
+            const bool king_side_valid =
+                !(WHITE_KING_PATH & occupancy) &&
+                (WHITE_KING_ROOK & pieces[ROOK]) &&
+                !(enemy_attacks & WHITE_KING_PATH) &&
+                castling.white_king_side;
+            castle_moves |= (king_side_valid * (1ULL << g1));
 
+            const bool queen_side_valid =
+                !(WHITE_QUEEN_PATH & occupancy) &&
+                (WHITE_QUEEN_ROOK & pieces[ROOK]) &&
+                !(enemy_attacks & WHITE_QUEEN_PATH) &&
+                castling.white_queen_side;
+            castle_moves |= (queen_side_valid * (1ULL << c1));
+        } else {
+            const bool king_side_valid =
+                !(BLACK_KING_PATH & occupancy) &&
+                (BLACK_KING_ROOK & pieces[ROOK + 6]) &&
+                !(enemy_attacks & BLACK_KING_PATH) &&
+                castling.black_king_side;
+            castle_moves |= (king_side_valid * (1ULL << g8));
+
+            const bool queen_side_valid =
+                !(BLACK_QUEEN_PATH & occupancy) &&
+                (BLACK_QUEEN_ROOK & pieces[ROOK + 6]) &&
+                !(enemy_attacks & BLACK_QUEEN_PATH) &&
+                castling.black_queen_side;
+            castle_moves |= (queen_side_valid * (1ULL << c8));
         }
-        else if constexpr (side == KING_SIDE) {
-            if (BLACK_KING_PATH & occupancy) { return false; }
-            if (!(BLACK_KING_ROOK & pieces[ROOK + 6])) { return false; }
-            //implement
-        }
-        else {
-            if (!(BLACK_QUEEN_ROOK & pieces[ROOK + 6])) { return false; }
-            if (BLACK_QUEEN_PATH & occupancy) { return false; }
-            // implement
-        }
-        return true;
+
+        return castle_moves;
     }
 
     void Initialise_From_Fen(const std::string& fen) {
@@ -188,7 +197,8 @@ class Board {
                     case 'q': pieces[QUEEN + 6] |= square_bb; break;
                     case 'k': pieces[KING + 6] |= square_bb; break;
 
-                    default:;
+                    default:
+                        break;
                 }
                 square++;
             }

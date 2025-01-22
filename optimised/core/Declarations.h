@@ -55,7 +55,7 @@ inline bool Get_Bit(const BB bitboard, const int square) {
 }
 
 inline int Count_Bits(const BB bitboard) {
-    return __builtin_popcount(bitboard);
+    return __builtin_popcountll(bitboard);
 }
 
 inline int Get_LSB(const BB bitboard) {

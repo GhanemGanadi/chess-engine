@@ -19,29 +19,50 @@ add_executable(chess_engine_optimised main.cpp
         Move_Generator.cpp
         Move_Generator.h
         comparison.h
+        engine/Perft.cpp
+        engine/Perft.h
 )
+
 target_include_directories(chess_engine_optimised PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/core
 )
 
-target_compile_options(chess_engine_optimised PRIVATE
-        -O3
-        -march=native
-        -flto
-        -fno-rtti
-        -fno-exceptions
-        -Wall
-        -Wextra
-)
 
-set_property(TARGET chess_engine_optimised PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_options(chess_engine_optimised PRIVATE
+            -O0
+            -g
+            -Wall
+            -Wextra
+    )
+else()
+    target_compile_options(chess_engine_optimised PRIVATE
+            -O3
+            -march=native
+            -flto
+            -fno-rtti
+            -fno-exceptions
+            -Wall
+            -Wextra
+    )
+
+    set_property(TARGET chess_engine_optimised PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
 
 if(MSVC)
-    target_compile_options(chess_engine_optimised PRIVATE
-            /O2
-            /GL
-            /GR
-            /EHs-   #
-    )
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        target_compile_options(chess_engine_optimised PRIVATE
+                /Od
+                /Zi
+                /DEBUG
+        )
+    else()
+        target_compile_options(chess_engine_optimised PRIVATE
+                /O2
+                /GL
+                /GR
+                /EHs-
+        )
+    endif()
 endif()
