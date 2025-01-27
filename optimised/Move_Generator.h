@@ -15,4 +15,6 @@ class Move_Generator {
     [[nodiscard]] static BB Get_Pin_Line(int pinned_square, int king_square, const Board& board);
 
     [[nodiscard]] static bool Make_Move(Move& move, Board& board);
+
+    [[nodiscard]] static PieceType Choose_Promotion_Piece();
 };

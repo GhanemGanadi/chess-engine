@@ -6,7 +6,7 @@
 
 
 class Board {
-    PieceColour current_turn = WHITE;
+
     union {
         struct {
             BB white_pawn, white_knight, white_bishop, white_rook, white_queen, white_king;
@@ -17,8 +17,6 @@ class Board {
 
     BB white_pieces, black_pieces;
 
-    BB white_king_rook, white_queen_rook;
-    BB black_king_rook, black_queen_rook;
 
     static constexpr BB WHITE_KING_PATH = 0x6000000000000000ULL;
     static constexpr BB BLACK_KING_PATH = 0x60ULL;
@@ -26,42 +24,88 @@ class Board {
     static constexpr BB BLACK_QUEEN_PATH = 0xeULL;
 
     static constexpr BB WHITE_KING_CASTLE = 0x50ULL;
-    static constexpr BB WHITE_KING_ROOK = 0xa0ULL;
     static constexpr BB WHITE_QUEEN_CASTLE = 0x1400000000000000ULL;
-    static constexpr BB WHITE_QUEEN_ROOK = 0x900000000000000ULL;
 
     static constexpr BB BLACK_KING_CASTLE = 0x50ULL;
-    static constexpr BB BLACK_KING_ROOK = 0xa0ULL;
     static constexpr BB BLACK_QUEEN_CASTLE = 0x14ULL;
-    static constexpr BB BLACK_QUEEN_ROOK = 0x9ULL;
+
 
     struct CastlingRights {
         bool white_king_side : 1;
         bool white_queen_side : 1;
         bool black_king_side : 1;
         bool black_queen_side : 1;
-    } castling;
+    };
+
+
+    struct GameState {
+        CastlingRights castling_rights;
+        int en_passant_square;
+    };
 
     size_t move_count = 0;
     static constexpr int MAX_GAME_LENGTH = 300;
+    int half_clock = 0;
 
     public:
+    PieceColour current_turn = WHITE;
+    static constexpr BB WHITE_QUEEN_ROOK = 0x900000000000000ULL;
+    static constexpr BB BLACK_KING_ROOK = 0xa0ULL;
+    static constexpr BB WHITE_KING_ROOK = 0xa0ULL;
+    static constexpr BB BLACK_QUEEN_ROOK = 0x9ULL;
+
+    CastlingRights castling = {false, false, false, false};
+
     int en_passant_square = -1;
 
     std::array<Move, MAX_GAME_LENGTH> move_history;
-    void Add_Move(const Move& move) { move_history[move_count++] = move; }
+    std::array<GameState, MAX_GAME_LENGTH> state_history;
 
-    [[nodiscard]] constexpr BB Get_Piece(const PieceType piece, const PieceColour colour) const {
-        return pieces[piece + (colour == BLACK ? 6 : 0)];
+    void Add_Move(const Move& move) {
+        move_history[move_count + 1] = move;
+        state_history[move_count++] = {
+            .castling_rights = castling,
+            .en_passant_square = en_passant_square
+        };
+
+    }
+
+    void Undo_Move() {
+        if (move_history.empty()) { return; }
+
+        Move& last_move = move_history[move_count - 1];
+        const GameState& prev = state_history[--move_count];
+
+        castling = prev.castling_rights;
+        en_passant_square = prev.en_passant_square;
+
+        const int colour = last_move.Get_Colour();
+        const int position = last_move.Get_To();
+
+        if (last_move.Get_Captured_Piece() != NO_PIECE) {
+            Place_Piece(last_move.Get_Capture_Position(), last_move.Get_Captured_Piece(), !colour);
+        }
+        if (last_move.Get_Castle_Side() != NO_CASTLE) { Castle(last_move, true); }
+
+        if (last_move.Get_Promotion_Piece() != NO_PIECE) {
+            Remove_Piece(position, last_move.Get_Promotion_Piece(), colour);
+        }
+
+        Move_Piece(position, last_move.Get_From(), last_move.Get_Piece(), colour);
+
+    }
+
+    [[nodiscard]] constexpr BB Get_Piece(const int piece, const int colour) const {
+        return pieces[piece + (6 * colour)];
     }
 
     [[nodiscard]] constexpr BB Get_White_Pieces() const { return white_pieces; }
     [[nodiscard]] constexpr BB Get_Black_Pieces() const { return black_pieces; }
     [[nodiscard]] constexpr BB Get_All_Pieces() const { return white_pieces | black_pieces; }
 
-     void constexpr Move_Piece(const int from, const int to, const PieceType piece, const PieceColour colour) {
+     void constexpr Move_Piece(const int from, const int to, const int piece, const int colour) {
         const BB move_mask = 1ULL << from | 1ULL << to;
-        pieces[piece + (colour == BLACK ? 6 : 0)] ^= move_mask;
+        pieces[piece + (6 * colour)] ^= move_mask;
 
         if (colour == WHITE) {
             white_pieces ^= move_mask;
@@ -70,7 +114,7 @@ class Board {
         }
     }
 
-    void constexpr Remove_Piece(const int square, const PieceType piece, const PieceColour colour) {
+    void constexpr Remove_Piece(const int square, const int piece, const int colour) {
         const BB move_mask = ~(1ULL << square);
         pieces[piece + (colour == BLACK ? 6 : 0)] &= move_mask;
 
@@ -81,9 +125,9 @@ class Board {
         }
     }
 
-    void constexpr Place_Piece(const int square, const PieceType piece, const PieceColour colour) {
+    void constexpr Place_Piece(const int square, const int piece, const int colour) {
         const BB move_mask = 1ULL << square;
-        pieces[piece + (colour == BLACK ? 6 : 0)] |= move_mask;
+        pieces[piece + (6 * colour)] |= move_mask;
 
         if (colour == WHITE) {
             white_pieces ^= move_mask;
@@ -92,9 +136,9 @@ class Board {
         }
     }
 
-    [[nodiscard]] constexpr PieceType Get_Piece_At_Square(const int square, const PieceColour colour) const {
+    [[nodiscard]] constexpr PieceType Get_Piece_At_Square(const int square, const int colour) const {
         const BB move_mask = 1ULL << square;
-        const int index = colour == BLACK ? 6 : 0;
+        const int index = 6 * colour;
 
         for (int i =0 ; i < 6; i++) {
             if (pieces[index + i] & move_mask) {
@@ -105,36 +149,62 @@ class Board {
     }
 
 
+    void Castle(Move& move, const bool reverse=false) {
+        const int colour = move.Get_Colour();
+        const CastleSide castle_side = move.Get_To() > move.Get_From() ? KING_SIDE : QUEEN_SIDE;
+        move.Set_Castle_Side(castle_side);
+
+        switch (colour) {
+            case WHITE:
+                castle_side == KING_SIDE ? Castle_Impl<WHITE, KING_SIDE>(reverse) :
+                                           Castle_Impl<WHITE, QUEEN_SIDE>(reverse);
+                break;
+
+            case BLACK:
+                castle_side == KING_SIDE ? Castle_Impl<BLACK, KING_SIDE>(reverse) :
+                                           Castle_Impl<BLACK, QUEEN_SIDE>(reverse);
+                break;
+
+            default:;
+        }
+
+    }
+
     template<PieceColour colour, CastleSide side>
-    void constexpr Castle() {
+    void constexpr Castle_Impl(const bool reverse=false) {
         if constexpr (colour == WHITE) {
             if constexpr (side == KING_SIDE) {
                 pieces[KING] ^= WHITE_KING_CASTLE;
                 pieces[ROOK] ^= WHITE_KING_ROOK;
                 white_pieces ^= (WHITE_KING_CASTLE | WHITE_KING_ROOK);
+                castling.white_king_side = reverse;
             } else {
                 pieces[KING] ^= WHITE_QUEEN_CASTLE;
                 pieces[ROOK] ^= WHITE_QUEEN_ROOK;
                 white_pieces ^= (WHITE_QUEEN_CASTLE | WHITE_QUEEN_ROOK);
+                castling.white_queen_side = reverse;
             }
         } else {
             if constexpr (side == KING_SIDE) {
                 pieces[KING + 6] ^= BLACK_KING_CASTLE;
                 pieces[ROOK + 6] ^= BLACK_KING_ROOK;
                 black_pieces ^= (BLACK_KING_CASTLE | BLACK_KING_ROOK);
+                castling.black_king_side = reverse;
             } else {
                 pieces[KING + 6] ^= BLACK_QUEEN_CASTLE;
                 pieces[ROOK + 6] ^= BLACK_QUEEN_ROOK;
                 black_pieces ^= (BLACK_QUEEN_CASTLE | BLACK_QUEEN_ROOK);
+                castling.black_queen_side = reverse;
             }
         }
+
     }
 
     [[nodiscard]] constexpr BB Get_Castle_Moves(const PieceColour colour, const BB enemy_attacks) const {
         BB castle_moves = 0ULL;
         const BB occupancy = Get_All_Pieces();
 
-        if constexpr (colour == WHITE) {
+        if (colour == WHITE) {
             const bool king_side_valid =
                 !(WHITE_KING_PATH & occupancy) &&
                 (WHITE_KING_ROOK & pieces[ROOK]) &&
@@ -171,7 +241,6 @@ class Board {
 
         pieces.fill(0);
         white_pieces = black_pieces = 0;
-        white_king_rook = white_queen_rook = black_king_rook = black_queen_rook = 0;
 
         int square = 0;
         size_t pos = 0;
@@ -207,24 +276,19 @@ class Board {
         current_turn = (fen[pos] == 'w') ? WHITE : BLACK;
         pos += 2;
 
-        castling = {false, false, false, false};
         while (fen[pos] != ' ') {
             switch (fen[pos++]) {
                 case 'K':
                     castling.white_king_side = true;
-                    white_king_rook = 1ULL << h1;
                     break;
                 case 'Q':
                     castling.white_queen_side = true;
-                    white_queen_rook = 1ULL << a1;
                     break;
                 case 'k':
                     castling.black_king_side = true;
-                    black_king_rook = 1ULL << h8;
                     break;
                 case 'q':
                     castling.black_queen_side = true;
-                    black_queen_rook = 1ULL << a8;
                     break;
 
                 default:;

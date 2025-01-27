@@ -21,6 +21,8 @@ add_executable(chess_engine_optimised main.cpp
         comparison.h
         engine/Perft.cpp
         engine/Perft.h
+        engine/Game.cpp
+        engine/Game.h
 )
 
 target_include_directories(chess_engine_optimised PRIVATE

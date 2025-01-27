@@ -29,6 +29,7 @@ public:
         bits.piece = piece;
         bits.colour = colour;
         bits.captured_piece = NO_PIECE;
+        bits.castle = NO_CASTLE;
 
     }
 
@@ -38,6 +39,7 @@ public:
     [[nodiscard]] constexpr int Get_Piece() const { return bits.piece; }
 
     [[nodiscard]] constexpr int Get_Captured_Piece() const { return bits.captured_piece; }
+    [[nodiscard]] constexpr int Get_Capture_Position() const { return bits.capture_destination; }
     [[nodiscard]] constexpr int Get_Promotion_Piece() const { return bits.promotion_piece; }
     [[nodiscard]] constexpr int Get_Castle_Side() const { return bits.castle; }
     [[nodiscard]] constexpr int Is_En_Passant() const { return bits.is_en_passant; }
@@ -51,12 +53,12 @@ public:
 
     constexpr void Set_Captured_Piece(const PieceType type) { bits.promotion_piece = type; }
     constexpr void Set_Capture_Position(const int square) { bits.capture_destination = square; }
-    constexpr void Set_PromotionPiece(const PieceType type) { bits.promotion_piece = type; }
-    constexpr void Set_CastleSide(const CastleSide side) { bits.castle = side; }
+    constexpr void Set_Promotion_Piece(const PieceType type) { bits.promotion_piece = type; }
+    constexpr void Set_Castle_Side(const CastleSide side) { bits.castle = side; }
     constexpr void Set_En_Passant(const bool en_passant) { bits.is_en_passant = en_passant; }
 
 
-    [[nodiscard]] constexpr bool Is_Castling() const {return bits.castle != NONE; }
+    [[nodiscard]] constexpr bool Is_Castling() const {return bits.castle != NO_CASTLE; }
 
     bool operator==(const Move& other) const { return raw == other.raw; }
     bool operator!=(const Move& other) const { return raw != other.raw; }

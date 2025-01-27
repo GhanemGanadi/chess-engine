@@ -38,7 +38,7 @@ static constexpr std::array RANKS = {
 
 enum PieceType {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, NO_PIECE};
 enum PieceColour {WHITE, BLACK};
-enum CastleSide {NONE, KING_SIDE, QUEEN_SIDE};
+enum CastleSide {NO_CASTLE, KING_SIDE, QUEEN_SIDE};
 enum Squares {
     a8, b8, c8, d8, e8, f8, g8, h8,
     a7, b7, c7, d7, e7, f7, g7, h7,
