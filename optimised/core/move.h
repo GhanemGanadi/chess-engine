@@ -30,6 +30,7 @@ public:
         bits.colour = colour;
         bits.captured_piece = NO_PIECE;
         bits.castle = NO_CASTLE;
+        bits.promotion_piece = NO_PIECE;
 
     }
 
@@ -42,7 +43,7 @@ public:
     [[nodiscard]] constexpr int Get_Capture_Position() const { return bits.capture_destination; }
     [[nodiscard]] constexpr int Get_Promotion_Piece() const { return bits.promotion_piece; }
     [[nodiscard]] constexpr int Get_Castle_Side() const { return bits.castle; }
-    [[nodiscard]] constexpr int Is_En_Passant() const { return bits.is_en_passant; }
+    [[nodiscard]] constexpr int Get_En_Passant() const { return bits.is_en_passant; }
 
     [[nodiscard]] constexpr U32 GetRaw() const { return raw; }
 
@@ -51,7 +52,7 @@ public:
     constexpr void Set_Colour(const PieceColour colour) { bits.colour = colour; }
     constexpr void Set_Piece(const PieceType type) { bits.piece = type; }
 
-    constexpr void Set_Captured_Piece(const PieceType type) { bits.promotion_piece = type; }
+    constexpr void Set_Captured_Piece(const PieceType type) { bits.captured_piece = type; }
     constexpr void Set_Capture_Position(const int square) { bits.capture_destination = square; }
     constexpr void Set_Promotion_Piece(const PieceType type) { bits.promotion_piece = type; }
     constexpr void Set_Castle_Side(const CastleSide side) { bits.castle = side; }
@@ -62,13 +63,5 @@ public:
 
     bool operator==(const Move& other) const { return raw == other.raw; }
     bool operator!=(const Move& other) const { return raw != other.raw; }
-
-
-
-
-
-
-
-
 
 };

@@ -47,11 +47,19 @@ void Game::Play_Game(const std::string& fen) {
     while (true) {
         turn = board.current_turn == WHITE ? "White " : "Black ";
         board.Print_Detailed_Board();
+        std::vector<Move> moves = Move_Generator::Generate_All_Moves(board);
+        Move_Generator::Display_All_Moves(moves);
 
-        std::cout << turn << "to make move: ";
+        std::cout << turn << "to make move OR undo move: ";
         std::cin >> user_move_string;
+        if (user_move_string == "undo") {
+            board.Undo_Move();
+            continue;
+        }
+
         Move user_move = Parse_Move(user_move_string, board.current_turn);
-        if (Move_Generator::Make_Move(user_move, board)) {
+
+        if (Move_Generator::Make_Move(user_move, false, board)) {
             std::cout << "Move successful" << std::endl;
         }
 

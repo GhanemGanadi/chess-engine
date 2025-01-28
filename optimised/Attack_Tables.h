@@ -16,8 +16,9 @@ class Attack_Tables {
 
     static std::array<BB, 64> Knight_Moves;
     static std::array<BB, 64> King_Moves;
-    static std::array<std::array<BB, 64>, 2> Pawn_Attacks;
+
     static std::array<std::array<BB, 64>, 2> Pawn_Moves;
+    static std::array<std::array<BB, 64>, 2> Pawn_Attacks;
 
     static BB Between_Squares[64][64];
 

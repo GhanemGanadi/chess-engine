@@ -24,7 +24,9 @@ int main() {
     // book.Save_To_File(OPENING_BOOK_PATH);
 
     Performance_Test test;
-    test.Piece_Type_Test();
+    // test.Piece_Type_Test();
+
+    Print_Bitboard(MoveGeneration::pawnMoves[h3][BLACK]);
 
 }
 

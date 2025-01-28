@@ -162,6 +162,19 @@ void Attack_Tables::Initialise_Attacks() {
     for(int square = 0; square < 64; square++) {
         Bishop_Masks[square] = Generate_Bishop_Attacks(square);
         Rook_Masks[square] = Generate_Rook_Attacks(square);
+
+        Pawn_Moves[WHITE][square] = Generate_Pawn_Moves(square, WHITE);
+        Pawn_Moves[BLACK][square] = Generate_Pawn_Moves(square, BLACK);
+
+        Pawn_Attacks[WHITE][square] = Generate_Pawn_Attacks(square, WHITE);
+        Pawn_Attacks[BLACK][square] = Generate_Pawn_Attacks(square, BLACK);
+
+        Knight_Moves[square] = Generate_Knight_Attacks(square);
+        King_Moves[square] = Generate_King_Attacks(square);
+
+        for (int square2 = 0; square2 < 64; square2++) {
+            Between_Squares[square][square2] = Generate_Between_Squares(square, square2);
+        }
     }
 
     for(int square = 0; square < 64; square++) {
@@ -183,17 +196,6 @@ void Attack_Tables::Initialise_Attacks() {
                                 >> (64 - bishopBits));
             Bishop_Moves[square][magicIndex] = Generate_Bishop_Attacks_With_Blocks(square, occupancy);
         }
-
-        Pawn_Moves[square][WHITE] = Generate_Pawn_Moves(square, WHITE);
-        Pawn_Moves[square][BLACK] = Generate_Pawn_Moves(square, BLACK);
-        Pawn_Attacks[square][WHITE] = Generate_Pawn_Attacks(square, WHITE);
-        Pawn_Attacks[square][BLACK] = Generate_Pawn_Attacks(square, BLACK);
-        Knight_Moves[square] = Generate_Knight_Attacks(square);
-        King_Moves[square] = Generate_King_Attacks(square);
-
-        for (int square2 = 0; square2 < 64; square2++) {
-            Between_Squares[square][square2] = Generate_Between_Squares(square, square2);
-        }
     }
 
 }
@@ -202,28 +204,31 @@ void Attack_Tables::Initialise_Attacks() {
 
 BB Attack_Tables::Generate_Pawn_Moves(const int square, const PieceColour colour) {
     const int direction = colour == WHITE ? -8 : 8;
-    if((square + direction) > 63 || (square + direction) < 0) return 0ULL;
 
-    BB pawn = 1ULL << (square + direction);
+    BB pawn = 1ULL << square;
+    BB moves = 0ULL;
+
+    moves |= (pawn << direction);
 
     const bool onStartRank = colour == WHITE ? (square >= 48 && square <= 55) :
-                                                (square >= 8 && square <= 15);
+                                              (square >= 8 && square <= 15);
 
-    if (onStartRank) { pawn |= 1ULL << (square + (2 * direction)); }
+    if (onStartRank) {
+        moves |= (pawn << (2 * direction));
+    }
 
-    return pawn;
+    return moves;
 }
-
 BB Attack_Tables::Generate_Pawn_Attacks(const int square, const PieceColour colour) {
     BB attacks = 0ULL;
-    const BB pawnBB = 1ULL << square;
+    const BB pawn_bb = 1ULL << square;
 
     if (colour == WHITE) {
-        attacks |= ((pawnBB >> 9) & ~H_FILE);
-        attacks |= ((pawnBB >> 7) & ~A_FILE);
+        attacks |= ((pawn_bb >> 9) & ~H_FILE);
+        attacks |= ((pawn_bb >> 7) & ~A_FILE);
     } else {
-        attacks |= ((pawnBB << 7) & ~H_FILE);
-        attacks |= ((pawnBB << 9) & ~A_FILE);
+        attacks |= ((pawn_bb << 7) & ~H_FILE);
+        attacks |= ((pawn_bb << 9) & ~A_FILE);
     }
     return attacks;
 }
@@ -286,19 +291,26 @@ BB Attack_Tables::Generate_Between_Squares(const int start_square, const int end
 }
 
 
-BB Attack_Tables::Get_Pawn_Moves(const int square, const PieceColour colour, const BB friendly) {
+BB Attack_Tables::Get_Pawn_Moves(const int square, const PieceColour colour, const BB occupancy) {
     Ensure_Initialised();
-    return (Pawn_Moves[square][colour] & ~friendly);
+    BB pawn_moves = Pawn_Moves[colour][square] & ~occupancy;
+    const BB singlePush = 1ULL << (square + (colour == WHITE ? -8 : 8));
+    const BB doublePush = 1ULL << (square + (colour == WHITE ? -16 : 16));
+    if (singlePush & occupancy) {
+        pawn_moves &= ~singlePush;
+        pawn_moves &= ~doublePush;
+    }
+    return pawn_moves;
 }
 
 BB Attack_Tables::Get_Pawn_Attacks(const int square, const PieceColour colour, const BB enemy,
                                     const int ep_square) {
     Ensure_Initialised();
-    BB moves = Pawn_Attacks[square][colour] & enemy;
+    BB moves = Pawn_Attacks[colour][square] & enemy;
     if (ep_square != -1) {
         const int rank = square / 8;
         if ((colour == WHITE && rank == 4) || (colour == BLACK && rank == 3)) {
-            if (Pawn_Attacks[square][colour] & (1ULL << ep_square)) {
+            if (Pawn_Attacks[colour][square] & (1ULL << ep_square)) {
                 moves |= 1ULL << ep_square;
             }
         }
@@ -347,7 +359,6 @@ BB Attack_Tables::Get_Attacks_From_Square(const int square, const PieceColour co
     BB attackers = 0;
     const PieceColour enemy_colour = colour == WHITE ? BLACK : WHITE;
     const BB occupancy = board.Get_All_Pieces();
-    board.Print_Detailed_Board();
 
     BB diagonal_sliders = board.Get_Piece(BISHOP, enemy_colour) | board.Get_Piece(QUEEN, enemy_colour);
     if (diagonal_sliders) {

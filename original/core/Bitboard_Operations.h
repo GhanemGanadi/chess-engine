@@ -227,7 +227,7 @@ inline Squares String_To_Square(const std::string& str) {
     return static_cast<Squares>(rank * 8 + file);
 }
 
-inline std::string Get_Piece_Name(PieceType piece) {
+inline std::string Get_Piece_Name(int piece) {
     switch(piece) {
         case PAWN: return "Pawn";
         case ROOK: return "Rook";

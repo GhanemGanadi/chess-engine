@@ -44,6 +44,7 @@ class Board {
     };
 
     size_t move_count = 0;
+    size_t state_count = 0;
     static constexpr int MAX_GAME_LENGTH = 300;
     int half_clock = 0;
 
@@ -62,19 +63,20 @@ class Board {
     std::array<GameState, MAX_GAME_LENGTH> state_history;
 
     void Add_Move(const Move& move) {
-        move_history[move_count + 1] = move;
-        state_history[move_count++] = {
-            .castling_rights = castling,
-            .en_passant_square = en_passant_square
-        };
+        move_history[move_count++] = move;
 
+    }
+    void Save_State() {
+        state_history[state_count++] = {
+        .castling_rights = castling,
+        .en_passant_square = en_passant_square};
     }
 
     void Undo_Move() {
-        if (move_history.empty()) { return; }
+        if (move_count == 0) { return; }
 
-        Move& last_move = move_history[move_count - 1];
-        const GameState& prev = state_history[--move_count];
+        Move& last_move = move_history[--move_count];
+        const GameState& prev = state_history[--state_count];
 
         castling = prev.castling_rights;
         en_passant_square = prev.en_passant_square;
@@ -85,13 +87,18 @@ class Board {
         if (last_move.Get_Captured_Piece() != NO_PIECE) {
             Place_Piece(last_move.Get_Capture_Position(), last_move.Get_Captured_Piece(), !colour);
         }
-        if (last_move.Get_Castle_Side() != NO_CASTLE) { Castle(last_move, true); }
+        if (last_move.Get_Castle_Side() != NO_CASTLE) {
+            Castle(last_move, true);
+            current_turn = current_turn == WHITE ? BLACK : WHITE;
+            return;
+        }
 
         if (last_move.Get_Promotion_Piece() != NO_PIECE) {
             Remove_Piece(position, last_move.Get_Promotion_Piece(), colour);
         }
 
         Move_Piece(position, last_move.Get_From(), last_move.Get_Piece(), colour);
+        current_turn = current_turn == WHITE ? BLACK : WHITE;
 
     }
 
@@ -152,7 +159,8 @@ class Board {
     void Castle(Move& move, const bool reverse=false) {
         const int colour = move.Get_Colour();
         const CastleSide castle_side = move.Get_To() > move.Get_From() ? KING_SIDE : QUEEN_SIDE;
-        move.Set_Castle_Side(castle_side);
+        if (!reverse){ move.Set_Castle_Side(castle_side); }
+
 
         switch (colour) {
             case WHITE:

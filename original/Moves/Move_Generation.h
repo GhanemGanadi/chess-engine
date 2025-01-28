@@ -9,7 +9,7 @@ class MoveGeneration {
     static Board board;
     static std::array<U64, 64> knightMoves;
     static std::array<U64, 64> kingMoves;
-    static std::array<std::array<U64, 64>, 2> pawnMoves;
+
     static std::array<std::array<U64, 64>, 2> pawnAttacks;
 
     // Private helper functions
@@ -29,7 +29,7 @@ class MoveGeneration {
 
 public:
     MoveGeneration();
-
+    static std::array<std::array<U64, 64>, 2> pawnMoves;
     [[nodiscard]] static U64 Get_Pseudo_Legal_Moves(int square, PieceColour colour, PieceType pieceType,
                                         const Board& board);
 

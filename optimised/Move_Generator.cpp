@@ -11,7 +11,7 @@ BB Move_Generator::Get_Pseudo_Legal_Moves(const int square, const PieceType piec
 
     switch (piece) {
         case PAWN:
-            return Attack_Tables::Get_Pawn_Moves(square, colour, friendly) |
+            return Attack_Tables::Get_Pawn_Moves(square, colour, occupancy) |
                     Attack_Tables::Get_Pawn_Attacks(square, colour, enemy, board.en_passant_square);
 
         case KNIGHT:
@@ -40,7 +40,6 @@ BB Move_Generator::Get_Legal_Moves(const int square, const PieceType piece, cons
                                     Board &board) {
 
     BB moves = Get_Pseudo_Legal_Moves(square, piece, colour, board);
-    Print_Bitboard(moves);
     const int king_square =  Get_LSB(board.Get_Piece(KING, colour));
     const PieceColour enemy_colour = colour == WHITE ? BLACK : WHITE;
 
@@ -104,17 +103,40 @@ BB Move_Generator::Get_Pinned_Pieces(const int king_square, const PieceColour co
     BB pinned = 0;
     const BB friendly_pieces = colour == WHITE ? board.Get_White_Pieces() : board.Get_Black_Pieces();
     const PieceColour enemy_colour = colour == WHITE ? BLACK : WHITE;
+    const BB occupancy = board.Get_All_Pieces();
 
-    BB potential_pinners = board.Get_Piece(BISHOP, enemy_colour) | board.Get_Piece(ROOK, enemy_colour) |
-                            board.Get_Piece(QUEEN, enemy_colour);
+    for (const auto& piece : {BISHOP, ROOK, QUEEN}) {
+        BB potential_pinners = board.Get_Piece(piece, enemy_colour);
+        while (potential_pinners) {
+            int square = Get_LSB(potential_pinners);
+            BB piece_attack = 0ULL;
+            switch (piece) {
+                case BISHOP:
+                    piece_attack = Attack_Tables::Get_Bishop_Moves(square, 0ULL);
+                    break;
+                case ROOK:
+                    piece_attack = Attack_Tables::Get_Rook_Moves(square, 0ULL);
+                    break;
 
-    while (potential_pinners) {
-        int pinner_square = Get_LSB(potential_pinners);
-        BB between_squares = Attack_Tables::Get_Between_Squares(king_square, pinner_square) | 1ULL << pinner_square;
-        if (Count_Bits(between_squares & friendly_pieces)) {
-            pinned |= (between_squares & potential_pinners);
+                case QUEEN:
+                    piece_attack = Attack_Tables::Get_Queen_Moves(square, 0ULL);
+                    break;
+                default:;
+            }
+            const BB between_squares = Attack_Tables::Get_Between_Squares(square, king_square);
+            if (between_squares & piece_attack) {
+                const BB pinned_piece = between_squares & ~occupancy;
+
+                if (Count_Bits(between_squares) - Count_Bits(pinned_piece) == 1) {
+                    const BB find_square = between_squares & ~pinned_piece;
+
+                    if (find_square & friendly_pieces) {
+                        pinned |= find_square;
+                    }
+                }
+            }
+            potential_pinners &= potential_pinners - 1;
         }
-        potential_pinners &= potential_pinners - 1;
     }
 
     return pinned;
@@ -141,7 +163,7 @@ BB Move_Generator::Get_Pin_Line(const int pinned_square, const int king_square, 
 }
 
 
-bool Move_Generator::Make_Move(Move& move, Board& board) {
+bool Move_Generator::Make_Move(Move& move, const bool generator, Board& board) {
     /*
      *  - ALL KINDS OF MOVES:
      *      * QUIET MOVE (DONE)
@@ -160,18 +182,22 @@ bool Move_Generator::Make_Move(Move& move, Board& board) {
     const PieceColour enemy_colour = colour == WHITE ? BLACK : WHITE;
 
     const BB legal_moves = Get_Legal_Moves(position, piece, colour, board);
-    Print_Bitboard(legal_moves);
 
     if (!legal_moves || !(legal_moves & 1ULL << destination)) { return false; }
+    board.Save_State();
 
     if (piece == PAWN) {
         if (1ULL << destination & (colour == BLACK ? RANK_1 : RANK_8)) {
-            const PieceType promotion_piece = Choose_Promotion_Piece();
-            move.Set_Promotion_Piece(promotion_piece);
-            board.Place_Piece(destination, promotion_piece, colour);
+            if (generator) {
+                board.Place_Piece(destination, move.Get_Promotion_Piece(), colour);
+            } else {
+                const PieceType promotion_piece = Choose_Promotion_Piece();
+                move.Set_Promotion_Piece(promotion_piece);
+                board.Place_Piece(destination, promotion_piece, colour);
+            }
             board.Remove_Piece(position, PAWN, colour);
-
         }
+
         else if (destination == board.en_passant_square) {
             const int captured_square = position + ((16 * colour) - 8);
             board.Remove_Piece(captured_square, PAWN, enemy_colour);
@@ -186,12 +212,16 @@ bool Move_Generator::Make_Move(Move& move, Board& board) {
     }
 
     if (1ULL << destination & enemy_pieces) {
-        board.Move_Piece(position, destination, piece, colour);
-        board.Remove_Piece(destination, board.Get_Piece_At_Square(destination, enemy_colour), enemy_colour);
+        const PieceType captured_piece = board.Get_Piece_At_Square(destination, enemy_colour);
+        board.Remove_Piece(destination, captured_piece, enemy_colour);
+        move.Set_Capture_Position(destination);
+        move.Set_Captured_Piece(captured_piece);
+
     }
 
     if (piece == KING) {
         if (abs(destination - position) == 2 && (1ULL << destination) & legal_moves) {
+            board.Save_State();
             board.Castle(move);
             board.Add_Move(move);
             board.current_turn = colour == WHITE ? BLACK : WHITE;
@@ -208,11 +238,11 @@ bool Move_Generator::Make_Move(Move& move, Board& board) {
     }
 
     if (piece == ROOK) {
-        const BB destination_bb = 1ULL << destination;
-        if (destination_bb & Board::WHITE_QUEEN_ROOK) { board.castling.white_queen_side = false; }
-        if (destination_bb & Board::WHITE_KING_ROOK) { board.castling.white_king_side = false; }
-        if (destination_bb & Board::BLACK_QUEEN_ROOK) { board.castling.black_queen_side = false; }
-        if (destination_bb & Board::BLACK_KING_ROOK) { board.castling.black_king_side = false; }
+        const BB position_bb = 1ULL << position;
+        if (position_bb & Board::WHITE_QUEEN_ROOK) { board.castling.white_queen_side = false; }
+        if (position_bb & Board::WHITE_KING_ROOK) { board.castling.white_king_side = false; }
+        if (position_bb & Board::BLACK_QUEEN_ROOK) { board.castling.black_queen_side = false; }
+        if (position_bb & Board::BLACK_KING_ROOK) { board.castling.black_king_side = false; }
     }
 
 
@@ -246,6 +276,79 @@ PieceType Move_Generator::Choose_Promotion_Piece() {
         }
     }
     return NO_PIECE;
+}
+
+
+std::vector<Move> Move_Generator::Generate_All_Moves(Board board) {
+    std::vector<Move> moves;
+    const PieceColour colour = board.current_turn;
+
+    for (const auto& piece : {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING}) {
+        BB piece_bb = board.Get_Piece(piece, colour);
+
+        while (piece_bb) {
+            const int piece_square = Get_LSB(piece_bb);
+            piece_bb &= piece_bb - 1;
+
+            BB legal_moves = Get_Legal_Moves(piece_square, piece, colour, board);
+
+            while (legal_moves) {
+                const int legal_move_square = Get_LSB(legal_moves);
+                legal_moves &= legal_moves - 1;
+                Move move = Move(piece_square, legal_move_square, piece, colour);
+
+                if (piece == PAWN) {
+                    if (1ULL << legal_move_square & (colour == BLACK ? RANK_1 : RANK_8)) {
+                        for (const PieceType promotion_pieces : {KNIGHT, BISHOP, ROOK, QUEEN}) {
+                            Move temp_move = move;
+                            move.Set_Promotion_Piece(promotion_pieces);
+                            if (Make_Move(temp_move, true, board)) {
+                                moves.push_back(temp_move);
+                                board.Undo_Move();
+                            }
+                        }
+                        continue;
+                    }
+                }
+
+                if (Make_Move(move, true, board)) {
+                    moves.push_back(move);
+                    board.Undo_Move();
+                }
+            }
+
+        }
+    }
+    return moves;
+}
+
+
+void Move_Generator::Display_All_Moves(const std::vector<Move>& moves) {
+    if(moves.empty()) return;
+
+    int current_type = moves[0].Get_Piece();
+    int current_colour = moves[0].Get_Colour();
+    std::cout << Get_Piece_Name(current_type + (6 * current_colour)) << ":\n";
+
+    for(const Move& move : moves) {
+        if(current_type != move.Get_Piece()) {
+            current_type = move.Get_Piece();
+            std::cout << "\n" << Get_Piece_Name(current_type) << ":\n";
+        }
+
+        std::cout << Square_To_String(move.Get_From())
+                 << Square_To_String(move.Get_To());
+
+        if(move.Get_Captured_Piece() != NO_PIECE) std::cout << " (CAPTURE)";
+        if(move.Is_Castling()) std::cout << " (CASTLE)";
+        if(move.Get_En_Passant() != 0) std::cout << " (EN PASSANT)";
+        if(move.Get_Promotion_Piece() != NO_PIECE) {
+            std::cout << " (PROMOTE to " << Get_Piece_Name(move.Get_Promotion_Piece()) << ")";
+        }
+
+        std::cout << " | ";
+    }
+    std::cout << std::endl;
 }
 
 

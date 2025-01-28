@@ -39,7 +39,7 @@ public:
             if (currentTurn == WHITE) {
             // Move bestMove = Engine::Search::Find_Best_Move(tempBoard, 4 , WHITE);
                 // input = Square_To_String(bestMove.Get_From()) + Square_To_String(bestMove.Get_To());
-                // board.Print_Move_Details(bestMove);
+//                 board.Print_Move_Details(bestMove);
 
             std::vector allMoves = MoveGeneration::Generate_All_Moves(currentTurn, board);
             MoveGeneration::Display_All_Moves(allMoves);

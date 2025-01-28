@@ -118,15 +118,41 @@ inline std::string Square_To_String(int square) {
     return result;
 }
 
-inline std::string Get_Piece_Name(PieceType piece) {
+inline std::string Get_Piece_Name(int piece) {
     switch(piece) {
-        case PAWN: return "Pawn";
-        case ROOK: return "Rook";
-        case KNIGHT: return "Knight";
-        case BISHOP: return "Bishop";
-        case QUEEN: return "Queen";
-        case KING: return "King";
-        case NO_PIECE: return "No Piece";
+        case 0: return "White Pawn";
+        case 1: return "White Rook";
+        case 2: return "White Knight";
+        case 3: return "White Bishop";
+        case 4: return "White Queen";
+        case 5: return "White King";
+        case 6: return "Black Pawn";
+        case 7: return "Black Rook";
+        case 8: return "Black Knight";
+        case 9: return "Black Bishop";
+        case 10: return "Black Queen";
+        case 11: return "Black King";
+        case 12: return "No Piece";
         default: return "Unknown";
     }
 }
+
+inline char Get_Piece_Symbol(const int piece) {
+    switch (piece) {
+        case PAWN:
+            return 'p';
+        case KNIGHT:
+            return 'k';
+        case BISHOP:
+            return 'b';
+        case ROOK:
+            return 'r';
+        case QUEEN:
+            return 'q';
+        case KING:
+            return 'k';
+        default: return 'x';
+    }
+}
+
+
