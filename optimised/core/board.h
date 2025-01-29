@@ -18,10 +18,6 @@ class Board {
     BB white_pieces, black_pieces;
 
 
-    static constexpr BB WHITE_KING_PATH = 0x6000000000000000ULL;
-    static constexpr BB BLACK_KING_PATH = 0x60ULL;
-    static constexpr BB WHITE_QUEEN_PATH = 0xe00000000000000ULL;
-    static constexpr BB BLACK_QUEEN_PATH = 0xeULL;
 
     static constexpr BB WHITE_KING_CASTLE = 0x50ULL;
     static constexpr BB WHITE_QUEEN_CASTLE = 0x1400000000000000ULL;
@@ -30,11 +26,15 @@ class Board {
     static constexpr BB BLACK_QUEEN_CASTLE = 0x14ULL;
 
 
-    struct CastlingRights {
-        bool white_king_side : 1;
-        bool white_queen_side : 1;
-        bool black_king_side : 1;
-        bool black_queen_side : 1;
+    union CastlingRights {
+        struct {
+            bool white_king_side : 1;
+            bool white_queen_side : 1;
+            bool black_king_side : 1;
+            bool black_queen_side : 1;
+        };
+        uint8_t rights;
+        [[nodiscard]] bool none() const { return rights == 0; }
     };
 
 
@@ -49,11 +49,17 @@ class Board {
     int half_clock = 0;
 
     public:
-    PieceColour current_turn = WHITE;
+
+    static constexpr BB WHITE_KING_PATH = 0x6000000000000000ULL;
+    static constexpr BB BLACK_KING_PATH = 0x60ULL;
+    static constexpr BB WHITE_QUEEN_PATH = 0xe00000000000000ULL;
+    static constexpr BB BLACK_QUEEN_PATH = 0xeULL;
     static constexpr BB WHITE_QUEEN_ROOK = 0x900000000000000ULL;
     static constexpr BB BLACK_KING_ROOK = 0xa0ULL;
-    static constexpr BB WHITE_KING_ROOK = 0xa0ULL;
+    static constexpr BB WHITE_KING_ROOK = 0xa000000000000000ULL;
     static constexpr BB BLACK_QUEEN_ROOK = 0x9ULL;
+
+    PieceColour current_turn = WHITE;
 
     CastlingRights castling = {false, false, false, false};
 
@@ -185,25 +191,29 @@ class Board {
                 pieces[KING] ^= WHITE_KING_CASTLE;
                 pieces[ROOK] ^= WHITE_KING_ROOK;
                 white_pieces ^= (WHITE_KING_CASTLE | WHITE_KING_ROOK);
-                castling.white_king_side = reverse;
+
             } else {
                 pieces[KING] ^= WHITE_QUEEN_CASTLE;
                 pieces[ROOK] ^= WHITE_QUEEN_ROOK;
                 white_pieces ^= (WHITE_QUEEN_CASTLE | WHITE_QUEEN_ROOK);
-                castling.white_queen_side = reverse;
+
             }
+            castling.white_king_side = reverse;
+            castling.white_queen_side = reverse;
         } else {
             if constexpr (side == KING_SIDE) {
                 pieces[KING + 6] ^= BLACK_KING_CASTLE;
                 pieces[ROOK + 6] ^= BLACK_KING_ROOK;
                 black_pieces ^= (BLACK_KING_CASTLE | BLACK_KING_ROOK);
-                castling.black_king_side = reverse;
+
             } else {
                 pieces[KING + 6] ^= BLACK_QUEEN_CASTLE;
                 pieces[ROOK + 6] ^= BLACK_QUEEN_ROOK;
                 black_pieces ^= (BLACK_QUEEN_CASTLE | BLACK_QUEEN_ROOK);
-                castling.black_queen_side = reverse;
+
             }
+            castling.black_king_side = reverse;
+            castling.black_queen_side = reverse;
         }
 
     }
@@ -211,33 +221,33 @@ class Board {
     [[nodiscard]] constexpr BB Get_Castle_Moves(const PieceColour colour, const BB enemy_attacks) const {
         BB castle_moves = 0ULL;
         const BB occupancy = Get_All_Pieces();
-
+        const BB king_bb = pieces[KING + (colour * 6)];
         if (colour == WHITE) {
             const bool king_side_valid =
                 !(WHITE_KING_PATH & occupancy) &&
                 (WHITE_KING_ROOK & pieces[ROOK]) &&
-                !(enemy_attacks & WHITE_KING_PATH) &&
+                !(enemy_attacks & (WHITE_KING_PATH | king_bb)) &&
                 castling.white_king_side;
             castle_moves |= (king_side_valid * (1ULL << g1));
 
             const bool queen_side_valid =
                 !(WHITE_QUEEN_PATH & occupancy) &&
                 (WHITE_QUEEN_ROOK & pieces[ROOK]) &&
-                !(enemy_attacks & WHITE_QUEEN_PATH) &&
+                !(enemy_attacks & (king_bb | WHITE_QUEEN_PATH)) &&
                 castling.white_queen_side;
             castle_moves |= (queen_side_valid * (1ULL << c1));
         } else {
             const bool king_side_valid =
                 !(BLACK_KING_PATH & occupancy) &&
                 (BLACK_KING_ROOK & pieces[ROOK + 6]) &&
-                !(enemy_attacks & BLACK_KING_PATH) &&
+                !(enemy_attacks & (king_bb | BLACK_KING_PATH)) &&
                 castling.black_king_side;
             castle_moves |= (king_side_valid * (1ULL << g8));
 
             const bool queen_side_valid =
                 !(BLACK_QUEEN_PATH & occupancy) &&
                 (BLACK_QUEEN_ROOK & pieces[ROOK + 6]) &&
-                !(enemy_attacks & BLACK_QUEEN_PATH) &&
+                !(enemy_attacks & (king_bb | BLACK_QUEEN_PATH)) &&
                 castling.black_queen_side;
             castle_moves |= (queen_side_valid * (1ULL << c8));
         }
@@ -342,5 +352,67 @@ class Board {
         std::cout << "   a b c d e f g h" << std::endl;
         std::cout << std::endl;
     }
+
+    [[nodiscard]] std::string Board_To_Fen() const {
+    std::string fen;
+    int emptyCount = 0;
+
+    // Loop through board ranks (8->1)
+    for (int rank = 0; rank < 8; rank++) {
+        for (int file = 0; file < 8; file++) {
+            int square = rank * 8 + file;
+            char pieceChar = 0;  // Use 0 instead of '.' for empty squares
+
+            // Check each piece type/color
+            if (Get_Bit(pieces[0], square)) pieceChar = 'P';
+            else if (Get_Bit(pieces[1], square)) pieceChar = 'N';
+            else if (Get_Bit(pieces[2], square)) pieceChar = 'B';
+            else if (Get_Bit(pieces[3], square)) pieceChar = 'R';
+            else if (Get_Bit(pieces[4], square)) pieceChar = 'Q';
+            else if (Get_Bit(pieces[5], square)) pieceChar = 'K';
+            else if (Get_Bit(pieces[6], square)) pieceChar = 'p';
+            else if (Get_Bit(pieces[7], square)) pieceChar = 'n';
+            else if (Get_Bit(pieces[8], square)) pieceChar = 'b';
+            else if (Get_Bit(pieces[9], square)) pieceChar = 'r';
+            else if (Get_Bit(pieces[10], square)) pieceChar = 'q';
+            else if (Get_Bit(pieces[11], square)) pieceChar = 'k';
+
+            if (pieceChar == 0) {
+                emptyCount++;
+            } else {
+                if (emptyCount > 0) {
+                    fen += std::to_string(emptyCount);
+                    emptyCount = 0;
+                }
+                fen += pieceChar;
+            }
+        }
+
+        if (emptyCount > 0) {
+            fen += std::to_string(emptyCount);
+            emptyCount = 0;
+        }
+
+        if (rank < 7) {
+            fen += '/';
+        }
+    }
+
+    // Add turn
+    fen += current_turn == WHITE ? " w " : " b ";
+
+    std::string castling_rights;
+    if (castling.white_king_side) castling_rights += 'K';
+    if (castling.white_queen_side) castling_rights += 'Q';
+    if (castling.black_king_side) castling_rights += 'k';
+    if (castling.black_queen_side) castling_rights += 'q';
+
+    fen += castling.none() ? "-" : castling_rights;
+
+    fen += " - " + std::to_string(half_clock) + " 1";
+
+    return fen;
+}
+
 
 };

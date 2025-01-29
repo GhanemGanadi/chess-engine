@@ -18,13 +18,13 @@ BB Move_Generator::Get_Pseudo_Legal_Moves(const int square, const PieceType piec
             return Attack_Tables::Get_Knight_Moves(square, friendly);
 
         case BISHOP:
-            return Attack_Tables::Get_Bishop_Moves(square, occupancy) & ~friendly;;
+            return Attack_Tables::Get_Bishop_Moves(square, occupancy) & ~friendly;
 
         case ROOK:
             return Attack_Tables::Get_Rook_Moves(square, occupancy) & ~friendly;
 
         case QUEEN:
-            return Attack_Tables::Get_Queen_Moves(square, occupancy) & ~friendly;;
+            return Attack_Tables::Get_Queen_Moves(square, occupancy) & ~friendly;
 
         case KING:
             return Attack_Tables::Get_King_Moves(square, friendly) |
@@ -64,6 +64,7 @@ BB Move_Generator::Get_Legal_Moves(const int square, const PieceType piece, cons
             board.Remove_Piece(king_square, KING, colour);
             BB all_attacked_square = Attack_Tables::Generate_All_Attacks(enemy_colour, board);
             board.Place_Piece(king_square, KING, colour);
+
             return ~all_attacked_square & moves;
 
         }
@@ -72,6 +73,7 @@ BB Move_Generator::Get_Legal_Moves(const int square, const PieceType piece, cons
             board.Remove_Piece(king_square, KING, colour);
             BB all_attacked_square = Attack_Tables::Generate_All_Attacks(enemy_colour, board);
             board.Place_Piece(king_square, KING, colour);
+
             return ~all_attacked_square & moves;
         }
 
@@ -86,10 +88,12 @@ BB Move_Generator::Get_Legal_Moves(const int square, const PieceType piece, cons
         board.Remove_Piece(king_square, KING, colour);
         const BB all_attacked_square = Attack_Tables::Generate_All_Attacks(enemy_colour, board);
         board.Place_Piece(king_square, KING, colour);
+
         return ~all_attacked_square & moves;
     }
 
     const BB pinned = Get_Pinned_Pieces(king_square, colour, board);
+
     BB pin_line = Attack_Tables::Get_Between_Squares(king_square, Get_LSB(pinned)) | pinned;
     if (pin_line & (1ULL << square)) {
         moves &= pin_line;
@@ -102,43 +106,34 @@ BB Move_Generator::Get_Pinned_Pieces(const int king_square, const PieceColour co
 
     BB pinned = 0;
     const BB friendly_pieces = colour == WHITE ? board.Get_White_Pieces() : board.Get_Black_Pieces();
-    const PieceColour enemy_colour = colour == WHITE ? BLACK : WHITE;
-    const BB occupancy = board.Get_All_Pieces();
+    const BB enemy_pieces = colour == WHITE ? board.Get_Black_Pieces() : board.Get_White_Pieces();
 
-    for (const auto& piece : {BISHOP, ROOK, QUEEN}) {
-        BB potential_pinners = board.Get_Piece(piece, enemy_colour);
-        while (potential_pinners) {
-            int square = Get_LSB(potential_pinners);
-            BB piece_attack = 0ULL;
-            switch (piece) {
-                case BISHOP:
-                    piece_attack = Attack_Tables::Get_Bishop_Moves(square, 0ULL);
-                    break;
-                case ROOK:
-                    piece_attack = Attack_Tables::Get_Rook_Moves(square, 0ULL);
-                    break;
+    BB diagonal_pinners = (board.Get_Piece(BISHOP, !colour) | board.Get_Piece(QUEEN, !colour)) &
+                            Attack_Tables::Get_Bishop_Moves(king_square, 0ULL);
+    BB orthogonal_pinners = (board.Get_Piece(ROOK, !colour) | board.Get_Piece(QUEEN, !colour)) &
+                            Attack_Tables::Get_Rook_Moves(king_square, 0ULL);
 
-                case QUEEN:
-                    piece_attack = Attack_Tables::Get_Queen_Moves(square, 0ULL);
-                    break;
-                default:;
-            }
-            const BB between_squares = Attack_Tables::Get_Between_Squares(square, king_square);
-            if (between_squares & piece_attack) {
-                const BB pinned_piece = between_squares & ~occupancy;
+    while (diagonal_pinners) {
+        const int square = Get_LSB(diagonal_pinners);
+        BB between_squares = Attack_Tables::Get_Between_Squares(king_square, square);
+        BB potential_pinned = between_squares & friendly_pieces;
 
-                if (Count_Bits(between_squares) - Count_Bits(pinned_piece) == 1) {
-                    const BB find_square = between_squares & ~pinned_piece;
-
-                    if (find_square & friendly_pieces) {
-                        pinned |= find_square;
-                    }
-                }
-            }
-            potential_pinners &= potential_pinners - 1;
+        if (Count_Bits(potential_pinned) == 1 && !(between_squares & enemy_pieces)) {
+            pinned |= 1ULL << square;
         }
+        diagonal_pinners &= diagonal_pinners - 1;
     }
 
+    while (orthogonal_pinners) {
+        const int square = Get_LSB(orthogonal_pinners);
+        BB between_squares = Attack_Tables::Get_Between_Squares(king_square, square);
+        BB potential_pinned = between_squares & friendly_pieces;
+
+        if (Count_Bits(potential_pinned) == 1 && !(between_squares & enemy_pieces)) {
+            pinned |= 1ULL << square;
+        }
+        orthogonal_pinners &= orthogonal_pinners - 1;
+    }
     return pinned;
 }
 
@@ -182,7 +177,6 @@ bool Move_Generator::Make_Move(Move& move, const bool generator, Board& board) {
     const PieceColour enemy_colour = colour == WHITE ? BLACK : WHITE;
 
     const BB legal_moves = Get_Legal_Moves(position, piece, colour, board);
-
     if (!legal_moves || !(legal_moves & 1ULL << destination)) { return false; }
     board.Save_State();
 
@@ -221,7 +215,6 @@ bool Move_Generator::Make_Move(Move& move, const bool generator, Board& board) {
 
     if (piece == KING) {
         if (abs(destination - position) == 2 && (1ULL << destination) & legal_moves) {
-            board.Save_State();
             board.Castle(move);
             board.Add_Move(move);
             board.current_turn = colour == WHITE ? BLACK : WHITE;

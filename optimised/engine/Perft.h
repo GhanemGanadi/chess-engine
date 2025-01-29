@@ -35,6 +35,8 @@ class Perft {
 public:
 
     static int Run_Perft(Board& board, int depth);
-    static void Perft_Divide(const std::string& fen, int depth);
+    static void Perft_Divide(Board& board, int depth);
+    static void Perft_Divide_Debugging(const std::string& fen, int depth);
+    static void Analyse_Differences(const std::string& my_output_file, const std::string& stockfish_file);
 
 };

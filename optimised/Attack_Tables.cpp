@@ -203,22 +203,29 @@ void Attack_Tables::Initialise_Attacks() {
 
 
 BB Attack_Tables::Generate_Pawn_Moves(const int square, const PieceColour colour) {
-    const int direction = colour == WHITE ? -8 : 8;
+    if ((colour == BLACK && (1ULL << square & RANK_8)) ||
+        (colour == WHITE && (1ULL << square & RANK_1))) {
+        return 0ULL;
+        }
 
-    BB pawn = 1ULL << square;
     BB moves = 0ULL;
+    const BB pawn = 1ULL << square;
 
-    moves |= (pawn << direction);
+    if (colour == WHITE) { moves |= (pawn >> 8); }
+    else { moves |= (pawn << 8); }
 
-    const bool onStartRank = colour == WHITE ? (square >= 48 && square <= 55) :
-                                              (square >= 8 && square <= 15);
+
+    const bool onStartRank = (colour == WHITE && square >= 48 && square <= 55) ||
+                           (colour == BLACK && square >= 8 && square <= 15);
 
     if (onStartRank) {
-        moves |= (pawn << (2 * direction));
+        if (colour == WHITE) { moves |= (pawn >> 16); }
+        else { moves |= (pawn << 16); }
     }
 
     return moves;
 }
+
 BB Attack_Tables::Generate_Pawn_Attacks(const int square, const PieceColour colour) {
     BB attacks = 0ULL;
     const BB pawn_bb = 1ULL << square;
@@ -293,13 +300,14 @@ BB Attack_Tables::Generate_Between_Squares(const int start_square, const int end
 
 BB Attack_Tables::Get_Pawn_Moves(const int square, const PieceColour colour, const BB occupancy) {
     Ensure_Initialised();
-    BB pawn_moves = Pawn_Moves[colour][square] & ~occupancy;
-    const BB singlePush = 1ULL << (square + (colour == WHITE ? -8 : 8));
-    const BB doublePush = 1ULL << (square + (colour == WHITE ? -16 : 16));
-    if (singlePush & occupancy) {
-        pawn_moves &= ~singlePush;
-        pawn_moves &= ~doublePush;
+    BB pawn_moves = Pawn_Moves[colour][square];
+    const BB single_push = 1ULL << (square + (colour == WHITE ? -8 : 8));
+    const BB double_push = 1ULL << (square + (colour == WHITE ? -16 : 16));
+    if (single_push & occupancy) {
+        pawn_moves &= ~single_push;
+        pawn_moves &= ~double_push;
     }
+    else if (double_push & occupancy) { pawn_moves &= ~double_push; }
     return pawn_moves;
 }
 
@@ -390,7 +398,7 @@ BB Attack_Tables::Generate_All_Attacks(const PieceColour attacking_colour, const
     BB pawns = board.Get_Piece(PAWN, attacking_colour);
     while (pawns) {
         const int square = Get_LSB(pawns);
-        attacks |= Get_Pawn_Attacks(square, attacking_colour, enemy_pieces, board.en_passant_square);
+        attacks |= Get_Pawn_Attacks(square, attacking_colour, ~0ULL, board.en_passant_square);
         pawns &= pawns - 1;
     }
 
