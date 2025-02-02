@@ -19,7 +19,7 @@ class Board {
 
 
 
-    static constexpr BB WHITE_KING_CASTLE = 0x50ULL;
+    static constexpr BB WHITE_KING_CASTLE = 0x5000000000000000ULL;
     static constexpr BB WHITE_QUEEN_CASTLE = 0x1400000000000000ULL;
 
     static constexpr BB BLACK_KING_CASTLE = 0x50ULL;
@@ -59,6 +59,10 @@ class Board {
     static constexpr BB WHITE_KING_ROOK = 0xa000000000000000ULL;
     static constexpr BB BLACK_QUEEN_ROOK = 0x9ULL;
 
+    static constexpr BB WHITE_KING_SHORT = 0x6000000000000000ULL;
+    static constexpr BB BLACK_KING_SHORT = 0x60ULL;
+    static constexpr BB BLACK_KING_LONG = 0xcULL;
+    static constexpr BB WHITE_KING_LONG = 0xc00000000000000ULL;
     PieceColour current_turn = WHITE;
 
     CastlingRights castling = {false, false, false, false};
@@ -101,6 +105,9 @@ class Board {
 
         if (last_move.Get_Promotion_Piece() != NO_PIECE) {
             Remove_Piece(position, last_move.Get_Promotion_Piece(), colour);
+            Place_Piece(last_move.Get_From(), last_move.Get_Piece(), colour);
+            current_turn = current_turn == WHITE ? BLACK : WHITE;
+            return;
         }
 
         Move_Piece(position, last_move.Get_From(), last_move.Get_Piece(), colour);
@@ -169,10 +176,11 @@ class Board {
 
 
         switch (colour) {
-            case WHITE:
+            case WHITE: {
                 castle_side == KING_SIDE ? Castle_Impl<WHITE, KING_SIDE>(reverse) :
                                            Castle_Impl<WHITE, QUEEN_SIDE>(reverse);
                 break;
+            }
 
             case BLACK:
                 castle_side == KING_SIDE ? Castle_Impl<BLACK, KING_SIDE>(reverse) :
@@ -226,28 +234,28 @@ class Board {
             const bool king_side_valid =
                 !(WHITE_KING_PATH & occupancy) &&
                 (WHITE_KING_ROOK & pieces[ROOK]) &&
-                !(enemy_attacks & (WHITE_KING_PATH | king_bb)) &&
+                !(enemy_attacks & (WHITE_KING_SHORT | king_bb)) &&
                 castling.white_king_side;
             castle_moves |= (king_side_valid * (1ULL << g1));
 
             const bool queen_side_valid =
                 !(WHITE_QUEEN_PATH & occupancy) &&
                 (WHITE_QUEEN_ROOK & pieces[ROOK]) &&
-                !(enemy_attacks & (king_bb | WHITE_QUEEN_PATH)) &&
+                !(enemy_attacks & (king_bb | WHITE_KING_LONG)) &&
                 castling.white_queen_side;
             castle_moves |= (queen_side_valid * (1ULL << c1));
         } else {
             const bool king_side_valid =
                 !(BLACK_KING_PATH & occupancy) &&
                 (BLACK_KING_ROOK & pieces[ROOK + 6]) &&
-                !(enemy_attacks & (king_bb | BLACK_KING_PATH)) &&
+                !(enemy_attacks & (king_bb | BLACK_KING_SHORT)) &&
                 castling.black_king_side;
             castle_moves |= (king_side_valid * (1ULL << g8));
 
             const bool queen_side_valid =
                 !(BLACK_QUEEN_PATH & occupancy) &&
                 (BLACK_QUEEN_ROOK & pieces[ROOK + 6]) &&
-                !(enemy_attacks & (king_bb | BLACK_QUEEN_PATH)) &&
+                !(enemy_attacks & (king_bb | BLACK_KING_LONG)) &&
                 castling.black_queen_side;
             castle_moves |= (queen_side_valid * (1ULL << c8));
         }
@@ -258,7 +266,9 @@ class Board {
     void Initialise_From_Fen(const std::string& fen) {
 
         pieces.fill(0);
-        white_pieces = black_pieces = 0;
+        white_pieces = 0;
+        black_pieces = 0;
+        en_passant_square = -1;
 
         int square = 0;
         size_t pos = 0;
@@ -271,18 +281,18 @@ class Board {
             } else {
                 const BB square_bb = 1ULL << square;
                 switch (c) {
-                    case 'P': pieces[PAWN] |= square_bb; break;
-                    case 'N': pieces[KNIGHT] |= square_bb; break;
-                    case 'B': pieces[BISHOP] |= square_bb; break;
-                    case 'R': pieces[ROOK] |= square_bb; break;
-                    case 'Q': pieces[QUEEN] |= square_bb; break;
-                    case 'K': pieces[KING] |= square_bb; break;
-                    case 'p': pieces[PAWN + 6] |= square_bb; break;
-                    case 'n': pieces[KNIGHT + 6] |= square_bb; break;
-                    case 'b': pieces[BISHOP + 6] |= square_bb; break;
-                    case 'r': pieces[ROOK + 6] |= square_bb; break;
-                    case 'q': pieces[QUEEN + 6] |= square_bb; break;
-                    case 'k': pieces[KING + 6] |= square_bb; break;
+                    case 'P': pieces[0] |= square_bb; break;
+                    case 'N': pieces[1] |= square_bb; break;
+                    case 'B': pieces[2] |= square_bb; break;
+                    case 'R': pieces[3] |= square_bb; break;
+                    case 'Q': pieces[4] |= square_bb; break;
+                    case 'K': pieces[5] |= square_bb; break;
+                    case 'p': pieces[6] |= square_bb; break;
+                    case 'n': pieces[7] |= square_bb; break;
+                    case 'b': pieces[8] |= square_bb; break;
+                    case 'r': pieces[9] |= square_bb; break;
+                    case 'q': pieces[10] |= square_bb; break;
+                    case 'k': pieces[11] |= square_bb; break;
 
                     default:
                         break;
@@ -312,12 +322,18 @@ class Board {
                 default:;
             }
         }
+        pos++;
+        if (fen[pos] != '-') {
+            char file = fen[pos];
+            char rank = fen[pos + 1];
+            en_passant_square = (8 - (rank - '0')) * 8 + (file - 'a');
+        }
 
-        white_pieces = pieces[PAWN] | pieces[KNIGHT] | pieces[BISHOP] |
-                       pieces[ROOK] | pieces[QUEEN] | pieces[KING];
+        white_pieces = pieces[0] | pieces[1] | pieces[2] |
+                       pieces[3] | pieces[4] | pieces[5];
 
-        black_pieces = pieces[PAWN + 6] | pieces[KNIGHT + 6] | pieces[BISHOP + 6] |
-                       pieces[ROOK + 6] | pieces[QUEEN + 6] | pieces[KING + 6];
+        black_pieces = pieces[6] | pieces[7] | pieces[8] |
+                       pieces[9] | pieces[10] | pieces[11];
     }
 
 

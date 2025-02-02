@@ -85,9 +85,9 @@ BB Move_Generator::Get_Legal_Moves(const int square, const PieceType piece, cons
     }
 
     if (piece == KING) {
-        board.Remove_Piece(king_square, KING, colour);
+        // board.Remove_Piece(king_square, KING, colour);
         const BB all_attacked_square = Attack_Tables::Generate_All_Attacks(enemy_colour, board);
-        board.Place_Piece(king_square, KING, colour);
+        // board.Place_Piece(king_square, KING, colour);
 
         return ~all_attacked_square & moves;
     }
@@ -190,10 +190,13 @@ bool Move_Generator::Make_Move(Move& move, const bool generator, Board& board) {
                 board.Place_Piece(destination, promotion_piece, colour);
             }
             board.Remove_Piece(position, PAWN, colour);
+            board.Add_Move(move);
+            board.current_turn = colour == WHITE ? BLACK : WHITE;
+            return true;
         }
 
         else if (destination == board.en_passant_square) {
-            const int captured_square = position + ((16 * colour) - 8);
+            const int captured_square = destination + ((-16 * colour) + 8);
             board.Remove_Piece(captured_square, PAWN, enemy_colour);
             board.en_passant_square = -1;
             move.Set_Captured_Piece(PAWN);
@@ -284,6 +287,7 @@ std::vector<Move> Move_Generator::Generate_All_Moves(Board board) {
             piece_bb &= piece_bb - 1;
 
             BB legal_moves = Get_Legal_Moves(piece_square, piece, colour, board);
+            Print_Bitboard(legal_moves);
 
             while (legal_moves) {
                 const int legal_move_square = Get_LSB(legal_moves);
@@ -294,7 +298,7 @@ std::vector<Move> Move_Generator::Generate_All_Moves(Board board) {
                     if (1ULL << legal_move_square & (colour == BLACK ? RANK_1 : RANK_8)) {
                         for (const PieceType promotion_pieces : {KNIGHT, BISHOP, ROOK, QUEEN}) {
                             Move temp_move = move;
-                            move.Set_Promotion_Piece(promotion_pieces);
+                            temp_move.Set_Promotion_Piece(promotion_pieces);
                             if (Make_Move(temp_move, true, board)) {
                                 moves.push_back(temp_move);
                                 board.Undo_Move();

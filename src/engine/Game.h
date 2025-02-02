@@ -1,5 +1,5 @@
 #pragma once
-#include "board.h"
+#include "../core/Board.h"
 
 
 class Game {

@@ -54,7 +54,7 @@ public:
 
     constexpr void Set_Captured_Piece(const PieceType type) { bits.captured_piece = type; }
     constexpr void Set_Capture_Position(const int square) { bits.capture_destination = square; }
-    constexpr void Set_Promotion_Piece(const PieceType type) { bits.promotion_piece = type; }
+    constexpr void Set_Promotion_Piece(const PieceType piece) { bits.promotion_piece = piece; }
     constexpr void Set_Castle_Side(const CastleSide side) { bits.castle = side; }
     constexpr void Set_En_Passant(const bool en_passant) { bits.is_en_passant = en_passant; }
 

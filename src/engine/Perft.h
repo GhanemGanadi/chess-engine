@@ -1,5 +1,5 @@
 #pragma once
-#include "Move_Generator.h"
+#include "../Move_Generator.h"
 
 struct PerftStats {
     BB nodes = 0;

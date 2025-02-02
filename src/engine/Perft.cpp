@@ -22,12 +22,11 @@ int Perft::Run_Perft(Board &board, int depth) {
 }
 
 void Perft::Perft_Divide(Board& board, const int depth) {
-    std::ofstream outFile("output.txt");
+    std::ofstream outFile("../output.txt");
     std::vector<Move> all_moves = Move_Generator::Generate_All_Moves(board);
 
     int total_nodes = 0;
     for (Move& move : all_moves) {
-
         if (Move_Generator::Make_Move(move, true, board)) {
             int nodes = Run_Perft(board, depth - 1);
             // std::cout << Square_To_String(move.Get_From()) << Square_To_String(move.Get_To());
@@ -66,6 +65,7 @@ void Perft::Perft_Divide_Debugging(const std::string& fen, int depth) {
     if (Move_Generator::Make_Move(user_move, false, board)) {
         Perft_Divide(board, depth - 1);
     }
+
 }
 
 void Perft::Analyse_Differences(const std::string& my_output_file, const std::string& stockfish_file) {
@@ -107,7 +107,7 @@ void Perft::Analyse_Differences(const std::string& my_output_file, const std::st
     }
 
     std::cout << "\nNode count differences:\n";
-    std::cout << "MOVE |  ME |   SF  |\n";
+    std::cout << "MOVE |  ME  |  SF  |\n";
     for (const auto& [move, count] : stockfish_moves) {
         if (my_moves.find(move) != my_moves.end() && my_moves[move] != count) {
             std::cout << move << " | " << my_moves[move] << " | " << count << " |"

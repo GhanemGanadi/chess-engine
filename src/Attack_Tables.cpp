@@ -311,18 +311,11 @@ BB Attack_Tables::Get_Pawn_Moves(const int square, const PieceColour colour, con
     return pawn_moves;
 }
 
-BB Attack_Tables::Get_Pawn_Attacks(const int square, const PieceColour colour, const BB enemy,
+BB Attack_Tables::Get_Pawn_Attacks(const int square, const PieceColour colour, BB enemy,
                                     const int ep_square) {
     Ensure_Initialised();
+    if (ep_square != -1) { enemy |= 1ULL << ep_square; }
     BB moves = Pawn_Attacks[colour][square] & enemy;
-    if (ep_square != -1) {
-        const int rank = square / 8;
-        if ((colour == WHITE && rank == 4) || (colour == BLACK && rank == 3)) {
-            if (Pawn_Attacks[colour][square] & (1ULL << ep_square)) {
-                moves |= 1ULL << ep_square;
-            }
-        }
-    }
     return moves;
 }
 
@@ -367,6 +360,7 @@ BB Attack_Tables::Get_Attacks_From_Square(const int square, const PieceColour co
     BB attackers = 0;
     const PieceColour enemy_colour = colour == WHITE ? BLACK : WHITE;
     const BB occupancy = board.Get_All_Pieces();
+    const BB enemy_pieces = enemy_colour == WHITE ? board.Get_White_Pieces() : board.Get_Black_Pieces();
 
     BB diagonal_sliders = board.Get_Piece(BISHOP, enemy_colour) | board.Get_Piece(QUEEN, enemy_colour);
     if (diagonal_sliders) {
@@ -382,7 +376,7 @@ BB Attack_Tables::Get_Attacks_From_Square(const int square, const PieceColour co
 
     attackers |= Get_Knight_Moves(square, 0) & board.Get_Piece(KNIGHT, enemy_colour);
 
-    attackers |= Get_Pawn_Attacks(square, colour, 0, -1) & board.Get_Piece(PAWN, enemy_colour);
+    attackers |= Get_Pawn_Attacks(square, colour, enemy_pieces, -1) & board.Get_Piece(PAWN, enemy_colour);
 
     attackers |= Get_King_Moves(square, 0) & board.Get_Piece(KING, enemy_colour);
 

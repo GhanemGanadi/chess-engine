@@ -1,5 +1,5 @@
 #include "Game.h"
-#include "Move_Generator.h"
+#include "../Move_Generator.h"
 
 Move Game::Parse_Move(const std::string& move, PieceColour colour, const Board& board) {
     Move user_move = Move();

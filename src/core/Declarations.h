@@ -40,7 +40,7 @@ enum PieceType {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, NO_PIECE};
 enum PieceColour {WHITE, BLACK};
 enum CastleSide {NO_CASTLE, KING_SIDE, QUEEN_SIDE};
 enum Squares {
-    a8, b8, c8, d8, e8, f8, g8, h8,
+    a8=0, b8, c8, d8, e8, f8, g8, h8,
     a7, b7, c7, d7, e7, f7, g7, h7,
     a6, b6, c6, d6, e6, f6, g6, h6,
     a5, b5, c5, d5, e5, f5, g5, h5,
@@ -142,7 +142,7 @@ inline char Get_Piece_Symbol(const int piece) {
         case PAWN:
             return 'p';
         case KNIGHT:
-            return 'k';
+            return 'n';
         case BISHOP:
             return 'b';
         case ROOK:
