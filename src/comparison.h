@@ -1,76 +1,61 @@
 #pragma once
 
-#include <chrono>
-#include <vector>
-#include <string>
+#include <cstdio>
+#include <fstream>
 #include <iostream>
-#include "Move_Generator.h"
+#include <string>
 
-class Performance_Test {
-
-    using Clock = std::chrono::high_resolution_clock;
-    using TimePoint = std::chrono::time_point<Clock>;
-    using Duration = std::chrono::nanoseconds;
-
-    Board board;
-
-    struct TestResults {
-        std::string test_name;
-        double time_ms;
-        int nodes;
-        double nodes_per_second;
-    };
-    std::vector<TestResults> results;
-
-    const std::vector<std::string> test_positions = {
-        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-        "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
-        "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
-        "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1"
-    };
+class StockfishTester {
+    FILE* pipe;
 
 public:
 
-    void Piece_Type_Test() {
-        int count = 1;
-        for (const auto& fen : test_positions) {
-            std::cout << "----------- FEN " << count << " ----------" << std::endl;
-            board.Initialise_From_Fen(fen);
+    StockfishTester() {
+        pipe = popen("/Users/ghanem/CLionProjects/chess-engine/stockfish", "r+");
 
-            for (const PieceType piece : {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING}) {
-                std::string piece_name;
-
-                switch (piece) {
-                    case PAWN: piece_name = "PAWN"; break;
-                    case KNIGHT: piece_name = "KNIGHT"; break;
-                    case BISHOP: piece_name = "BISHOP"; break;
-                    case ROOK: piece_name = "ROOK"; break;
-                    case QUEEN: piece_name = "QUEEN"; break;
-                    case KING: piece_name = "KING"; break;
-                    default: piece_name = "UNKNOWN"; break;
-                }
-
-                auto start = Clock::now();
-                BB moves = 0ULL;
-                for (int square = 0; square < 64; ++square) {
-                    moves |= Move_Generator::Get_Legal_Moves(square, piece, WHITE, board);
-                }
-                auto end = Clock::now() - start;
-
-                double timeTaken = std::chrono::duration<double, std::milli>(end).count();
-                TestResults test_results = {
-                        piece_name,
-                        timeTaken,
-                        Count_Bits(moves),
-                        static_cast<double>(Count_Bits(moves)) / (timeTaken / 1000.0)
-                        };
-                results.push_back(test_results);
-                std::cout << piece_name << " moves:\n";
-                std::cout << "New implementation: " << timeTaken << "ms\n";
-
-            }
-            ++count;
+        if (!pipe) {
+            throw std::runtime_error("Failed to open stockfish");
         }
-
     }
+    ~StockfishTester() {
+        pclose(pipe);
+    }
+
+    void Send_Command(const std::string& cmd) {
+        fprintf(pipe, "%s\n", cmd.c_str());
+        fflush(pipe);
+    }
+    std::string Get_Response() {
+        char buffer[4096];
+        while (fgets(buffer, sizeof(buffer), pipe)) {
+            std::string line(buffer);
+            if (line.find("info") != std::string::npos ||
+                line.find("Stockfish") != std::string::npos ||
+                line.find("NNUE") != std::string::npos) {
+                continue;
+    }
+            if (line.find(":") != std::string::npos ||
+                line.find("Nodes searched") != std::string::npos) {
+                return line;
+            }
+        }
+        return "";
+    }
+
+    void Test(const std::string& fen, const std::string& depth) {
+        std::ofstream stockfish_output("../stockfish.txt");
+        Send_Command("position fen " + fen);
+        Send_Command("go perft " + depth);
+
+        std::string line;
+        do {
+            line = Get_Response();
+            std::cout << line;
+            stockfish_output <<  line;
+        } while (line.find("Nodes searched") == std::string::npos);
+
+        stockfish_output.close();
+    }
+
+
 };
