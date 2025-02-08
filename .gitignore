@@ -19,6 +19,8 @@ original/core/test.txt
 original/core/opening-book.txt
 masters.txt
 output.txt
+stockfish
+stockfish.txt
 
 # Compiled files
 *.o
