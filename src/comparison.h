@@ -42,7 +42,7 @@ public:
         return "";
     }
 
-    void Test(const std::string& fen, const std::string& depth) {
+    void Test(const std::string &fen, const std::string& depth) {
         std::ofstream stockfish_output("../stockfish.txt");
         Send_Command("position fen " + fen);
         Send_Command("go perft " + depth);
@@ -50,7 +50,7 @@ public:
         std::string line;
         do {
             line = Get_Response();
-            std::cout << line;
+            // std::cout << line;
             stockfish_output <<  line;
         } while (line.find("Nodes searched") == std::string::npos);
 

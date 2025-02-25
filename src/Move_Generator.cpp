@@ -85,18 +85,18 @@ BB Move_Generator::Get_Legal_Moves(const int square, const PieceType piece, cons
     }
 
     if (piece == KING) {
-        // board.Remove_Piece(king_square, KING, colour);
         const BB all_attacked_square = Attack_Tables::Generate_All_Attacks(enemy_colour, board);
-        // board.Place_Piece(king_square, KING, colour);
-
         return ~all_attacked_square & moves;
     }
 
-    const BB pinned = Get_Pinned_Pieces(king_square, colour, board);
+    BB pinned = Get_Pinned_Pieces(king_square, colour, board);
 
-    BB pin_line = Attack_Tables::Get_Between_Squares(king_square, Get_LSB(pinned)) | pinned;
-    if (pin_line & (1ULL << square)) {
-        moves &= pin_line;
+    while (pinned) {
+        const int single_pin = Get_LSB(pinned);
+        pinned &= pinned - 1;
+
+        BB pin_line = Attack_Tables::Get_Between_Squares(king_square, single_pin) | (1ULL << single_pin);
+        if (pin_line & (1ULL << square)) { moves &= pin_line; }
     }
 
     return moves;
@@ -287,7 +287,6 @@ std::vector<Move> Move_Generator::Generate_All_Moves(Board board) {
             piece_bb &= piece_bb - 1;
 
             BB legal_moves = Get_Legal_Moves(piece_square, piece, colour, board);
-            Print_Bitboard(legal_moves);
 
             while (legal_moves) {
                 const int legal_move_square = Get_LSB(legal_moves);
