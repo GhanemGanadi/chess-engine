@@ -425,7 +425,18 @@ class Board {
 
     fen += castling.none() ? "-" : castling_rights;
 
-    fen += " - " + std::to_string(half_clock) + " 1";
+        fen += " ";
+        if (en_passant_square != -1) {
+            // Convert square index to algebraic notation (e.g., e3)
+            char file = 'a' + (en_passant_square % 8);
+            char rank = '8' - (en_passant_square / 8);
+            fen += file;
+            fen += rank;
+        } else {
+            fen += "-";
+        }
+
+        fen += " " + std::to_string(half_clock) + " 1";
 
     return fen;
 }

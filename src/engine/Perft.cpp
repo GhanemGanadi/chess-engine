@@ -14,6 +14,7 @@ int Perft::Run_Perft(Board &board, int depth) {
 
     for (Move& move : all_moves) {
         if (Move_Generator::Make_Move(move, true, board)) {
+            std::cout << board.Board_To_Fen() << std::endl;
             nodes += Run_Perft(board, depth - 1);
             board.Undo_Move();
         }
@@ -28,6 +29,7 @@ void Perft::Perft_Divide(Board& board, const int depth) {
     int total_nodes = 0;
     for (Move& move : all_moves) {
         if (Move_Generator::Make_Move(move, true, board)) {
+            std::cout << board.Board_To_Fen() << std::endl;
             int nodes = Run_Perft(board, depth - 1);
             // std::cout << Square_To_String(move.Get_From()) << Square_To_String(move.Get_To());
             outFile << Square_To_String(move.Get_From()) << Square_To_String(move.Get_To());

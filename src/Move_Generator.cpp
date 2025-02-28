@@ -89,6 +89,20 @@ BB Move_Generator::Get_Legal_Moves(const int square, const PieceType piece, cons
         return ~all_attacked_square & moves;
     }
 
+    if (piece == PAWN && (board.en_passant_square != -1) && (moves & (1ULL << board.en_passant_square))) {
+
+        board.Move_Piece(square, board.en_passant_square, PAWN, colour);
+        const int enemy_pawn = board.en_passant_square + (enemy_colour == WHITE ? -8 : 8);
+        board.Remove_Piece(enemy_pawn, PAWN, enemy_colour);
+
+        const BB all_attacked_square = Attack_Tables::Generate_All_Attacks(enemy_colour, board);
+        if (all_attacked_square & 1ULL << king_square) {
+            moves &= ~(1ULL << board.en_passant_square);
+        }
+        board.Move_Piece(board.en_passant_square, square, PAWN, colour);
+        board.Place_Piece(enemy_pawn, PAWN, enemy_colour);
+    }
+
     BB pinned = Get_Pinned_Pieces(king_square, colour, board);
 
     while (pinned) {
@@ -206,7 +220,11 @@ bool Move_Generator::Make_Move(Move& move, const bool generator, Board& board) {
         else if (abs(destination - position) == 16) {
             board.en_passant_square = destination + ((-16 * colour) + 8);
         }
+        else {
+            board.en_passant_square = -1;
+        }
     }
+    else { board.en_passant_square = -1; }
 
     if (1ULL << destination & enemy_pieces) {
         const PieceType captured_piece = board.Get_Piece_At_Square(destination, enemy_colour);
