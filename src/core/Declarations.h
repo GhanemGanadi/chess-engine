@@ -91,9 +91,9 @@ inline void Print_Bitboard(const BB bitboard) {
         std::cout << std::endl;
         count -= 1;
     }
-    std:: cout << "   a b c d e f g h" << std::endl;
+    std::cout << "   a b c d e f g h" << std::endl;
     std::cout << std::endl;
-}
+ }
 
 [[nodiscard]] inline bool Same_Diagonal(const int square1, const int square2) {
     const int rank1 = square1 / 8;

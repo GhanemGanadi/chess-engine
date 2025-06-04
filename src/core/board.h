@@ -206,8 +206,16 @@ class Board {
                 white_pieces ^= (WHITE_QUEEN_CASTLE | WHITE_QUEEN_ROOK);
 
             }
-            castling.white_king_side = reverse;
-            castling.white_queen_side = reverse;
+            if constexpr (side == KING_SIDE) {
+                castling.white_king_side = reverse;
+            } else {
+                castling.white_queen_side = reverse;
+            }
+            if (!reverse) {
+                castling.white_king_side = false;
+                castling.white_queen_side = false;
+            }
+
         } else {
             if constexpr (side == KING_SIDE) {
                 pieces[KING + 6] ^= BLACK_KING_CASTLE;
@@ -220,8 +228,16 @@ class Board {
                 black_pieces ^= (BLACK_QUEEN_CASTLE | BLACK_QUEEN_ROOK);
 
             }
-            castling.black_king_side = reverse;
-            castling.black_queen_side = reverse;
+            if constexpr (side == KING_SIDE) {
+                castling.black_king_side = reverse;
+            } else {
+                castling.black_queen_side = reverse;
+            }
+            // Always disable all castling rights after castling
+            if (!reverse) {
+                castling.black_king_side = false;
+                castling.black_queen_side = false;
+            }
         }
 
     }

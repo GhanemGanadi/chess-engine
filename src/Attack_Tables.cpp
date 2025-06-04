@@ -387,7 +387,6 @@ BB Attack_Tables::Generate_All_Attacks(const PieceColour attacking_colour, const
     BB attacks = 0ULL;
     const BB occupancy = board.Get_All_Pieces();
     const BB friendly_pieces = attacking_colour == WHITE ? board.Get_White_Pieces() : board.Get_Black_Pieces();
-    const BB enemy_pieces = attacking_colour == WHITE ? board.Get_Black_Pieces() : board.Get_White_Pieces();
 
     BB pawns = board.Get_Piece(PAWN, attacking_colour);
     while (pawns) {
@@ -417,7 +416,8 @@ BB Attack_Tables::Generate_All_Attacks(const PieceColour attacking_colour, const
     const int king_square = Get_LSB(board.Get_Piece(KING, attacking_colour));
     attacks |= King_Moves[king_square];
 
-    return attacks & ~friendly_pieces;
+    // return attacks & ~friendly_pieces;
+    return attacks;
 }
 
 

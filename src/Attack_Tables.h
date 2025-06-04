@@ -40,7 +40,7 @@ class Attack_Tables {
 
 public:
 
-    static BB Get_Pawn_Moves(int square, PieceColour colour, BB friendly);
+    static BB Get_Pawn_Moves(int square, PieceColour colour, BB occupancy);
     static BB Get_Pawn_Attacks(int square, PieceColour colour, BB enemy, int ep_square);
     static BB Get_Knight_Moves(int square, BB occupancy);
     static BB Get_Bishop_Moves(int square, BB occupancy);
