@@ -15,7 +15,7 @@ class StockfishTester {
 public:
 
     StockfishTester() {
-        pipe = popen("/Users/ghanem/CLionProjects/chess-engine/stockfish", "r+");
+        pipe = popen("../stockfish", "r+");
 
         if (!pipe) {
             throw std::runtime_error("Failed to open stockfish");
