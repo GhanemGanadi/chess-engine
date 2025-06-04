@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/board.h"
+#include <vector>
 
 class Move_Generator {
 

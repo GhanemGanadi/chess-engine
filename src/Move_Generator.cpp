@@ -158,8 +158,8 @@ BB Move_Generator::Get_Pin_Line(const int pinned_square, const int king_square, 
 
     const int pinned_rank = pinned_square / 8;
     const int pinned_file = pinned_square % 8;
-    const int king_rank = pinned_rank / 8;
-    const int king_file = pinned_rank % 8;
+    const int king_rank = king_square / 8;
+    const int king_file = king_square % 8;
 
     if (pinned_rank == king_rank || pinned_file == king_file) {
         pin_line |= Attack_Tables::Get_Rook_Moves(pinned_square, occupancy);

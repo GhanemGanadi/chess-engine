@@ -1,4 +1,5 @@
 #include "Attack_Tables.h"
+#include <mutex>
 
 std::once_flag Attack_Tables::flag;
 

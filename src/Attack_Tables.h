@@ -1,5 +1,6 @@
 #pragma once
 #include "core/board.h"
+#include <mutex>
 
 
 class Attack_Tables {
