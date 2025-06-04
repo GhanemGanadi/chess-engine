@@ -10,60 +10,34 @@
 #include "engine/Game.h"
 
 class StockfishTester {
-    FILE* pipe;
-
 public:
-
-    StockfishTester() {
-        pipe = popen("../stockfish", "r+");
-
+    static void Stockfish_Perft(const std::string &fen, const std::string &depth) {
+        std::string cmd = "printf 'position fen " + fen + "\ngo perft " + depth + "\n' | ../stockfish";
+        FILE* pipe = popen(cmd.c_str(), "r");
         if (!pipe) {
             throw std::runtime_error("Failed to open stockfish");
         }
-    }
-    ~StockfishTester() {
-        pclose(pipe);
-    }
-
-    void Send_Command(const std::string& cmd) {
-        fprintf(pipe, "%s\n", cmd.c_str());
-        fflush(pipe);
-    }
-    std::string Get_Response() {
+        Board board;
+        board.Initialise_From_Fen(fen);
+        std::vector<Move> stockfish_moves;
         char buffer[4096];
+        std::ofstream fout("../stockfish.txt");
         while (fgets(buffer, sizeof(buffer), pipe)) {
             std::string line(buffer);
             if (line.find("info") != std::string::npos ||
                 line.find("Stockfish") != std::string::npos ||
                 line.find("NNUE") != std::string::npos) {
                 continue;
-    }
-            if (line.find(":") != std::string::npos ||
-                line.find("Nodes searched") != std::string::npos) {
-                return line;
+                }
+            fout << line;
+            if (line.find(":") != std::string::npos) {
+                Move temp_move = Game::Parse_Move(line.substr(0,4), board.current_turn, board);
+                if (temp_move != Move()) { stockfish_moves.push_back(temp_move); }
             }
         }
-        return "";
-    }
-
-    void Stockfish_Perft(const std::string &fen, const std::string& depth) {
-        Board board;
-        board.Initialise_From_Fen(fen);
-        Send_Command("position fen " + fen);
-        Send_Command("go perft " + depth);
-        std::vector<Move> stockfish_moves;
-        std::string line;
-        std::ofstream fout("../stockfish.txt");
-        do {
-            line = Get_Response();
-            fout << line;
-            Move temp_move = Game::Parse_Move(line.substr(0,4), board.current_turn, board);
-            if (temp_move != Move()) { stockfish_moves.push_back(temp_move); }
-
-        } while (line.find("Nodes searched") == std::string::npos);
+        pclose(pipe);
         fout.close();
         // Compare_Moves(fen, stockfish_moves);
-
     }
 
     void Compare_Moves(const std::string& fen, const std::vector<Move>& stockfish_moves) {
@@ -89,39 +63,5 @@ public:
 
         std::cout << "Moves in our engine that aren't in Stockfish:" << std::endl;
         int extra_count = 0;
-        for (const auto& [move_str, _] : my_move_map) {
-            if (stockfish_move_map.find(move_str) == stockfish_move_map.end()) {
-                std::cout << "  " << move_str << std::endl;
-                extra_count++;
-            }
-        }
-        if (extra_count == 0) {
-            std::cout << "  None" << std::endl;
-        } else {
-            std::cout << "  Total: " << extra_count << " extra moves" << std::endl;
-        }
-
-        // Find moves in stockfish but not in our engine
-        std::cout << "\nMoves in Stockfish that aren't in our engine:" << std::endl;
-        int missing_count = 0;
-        for (const auto& [move_str, _] : stockfish_move_map) {
-            if (my_move_map.find(move_str) == my_move_map.end()) {
-                std::cout << "  " << move_str << std::endl;
-                missing_count++;
-            }
-        }
-        if (missing_count == 0) {
-            std::cout << "  None" << std::endl;
-        } else {
-            std::cout << "  Total: " << missing_count << " missing moves" << std::endl;
-        }
-
-        // Print summary
-        std::cout << "\nSummary:" << std::endl;
-        std::cout << "  Our engine:  " << my_move_map.size() << " moves" << std::endl;
-        std::cout << "  Stockfish:   " << stockfish_moves.size() << " moves" << std::endl;
-        std::cout << "  Extra:       " << extra_count << " moves" << std::endl;
-        std::cout << "  Missing:     " << missing_count << " moves" << std::endl;
     }
-
 };
